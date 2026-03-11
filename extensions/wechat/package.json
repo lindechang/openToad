@@ -1,0 +1,13 @@
+{
+  "name": "@openclaw/wechat",
+  "version": "1.0.0",
+  "description": "WeChat channel plugin for OpenToad",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "openclaw": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
