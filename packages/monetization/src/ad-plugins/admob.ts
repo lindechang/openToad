@@ -1,9 +1,27 @@
-import type { AdProvider, AdConfig, AdUnit } from './admob';
+export interface AdProvider {
+  name: string;
+  isSupported(): boolean;
+  loadAd(config: AdConfig): Promise<AdUnit>;
+  showAd(unit: AdUnit): Promise<void>;
+}
+
+export interface AdConfig {
+  appId: string;
+  adUnitId: string;
+}
+
+export interface AdUnit {
+  id: string;
+  type: 'banner' | 'interstitial' | 'rewarded';
+  loaded: boolean;
+}
 
 export class AdMobProvider implements AdProvider {
   name = 'admob';
 
   isSupported(): boolean {
+    if (typeof globalThis === 'undefined') return false;
+    const window = globalThis as any;
     return typeof window !== 'undefined' && !!window.google?.adsbygoogle;
   }
 
@@ -21,8 +39,10 @@ export class AdMobProvider implements AdProvider {
       };
 
       try {
-        (window.google as any).adsbygoogle = (window.google as any).adsbygoogle || [];
-        (window.google as any).adsbygoogle.push({
+        const window = globalThis as any;
+        window.google = window.google || {};
+        window.google.adsbygoogle = window.google.adsbygoogle || [];
+        window.google.adsbygoogle.push({
           adUnitId: config.adUnitId,
           adSize: 'BANNER',
           elementId: `admob-${config.adUnitId}`,
@@ -42,12 +62,5 @@ export class AdMobProvider implements AdProvider {
     if (unit.loaded) {
       console.log('[AdMob] Showing ad:', unit.id);
     }
-  }
-}
-
-declare global {
-  interface Window {
-    google: any;
-    adsbygoogle: any[];
   }
 }

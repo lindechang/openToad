@@ -1,9 +1,13 @@
 {
-  "name": "@openclaw/monetization",
+  "name": "@opentoad/monetization",
   "version": "1.0.0",
   "description": "Monetization module for OpenToad",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "zod": "^4.3.6"
   },

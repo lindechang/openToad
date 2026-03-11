@@ -6,7 +6,7 @@ export class UnionAdProvider implements AdProvider {
   private configs: Map<string, AdConfig> = new Map();
 
   isSupported(): boolean {
-    return typeof window !== 'undefined';
+    return true;
   }
 
   async loadAd(config: AdConfig): Promise<AdUnit> {

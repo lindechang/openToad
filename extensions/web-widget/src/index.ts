@@ -1,4 +1,4 @@
-import type { ChannelPlugin, Message, ChannelCredentials } from 'openclaw/plugin-sdk';
+import type { ChannelPlugin, Message, ChannelCredentials } from 'opentoad';
 import { Hono } from 'hono';
 
 export interface WebWidgetCredentials {

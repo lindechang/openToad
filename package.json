@@ -1,0 +1,20 @@
+{
+  "name": "opentoad",
+  "version": "1.0.0",
+  "description": "Self-Sustainable AI Assistant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r run dev",
+    "test": "vitest",
+    "lint": "pnpm -r run lint"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

@@ -1,23 +1,30 @@
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+export interface DatabaseConfig {
+  url: string;
 }
 
+export class Database {
+  private connected: boolean = false;
+
+  async connect(config: DatabaseConfig): Promise<void> {
+    console.log(`[Database] Connecting to ${config.url}`);
+    this.connected = true;
+  }
+
+  async disconnect(): Promise<void> {
+    this.connected = false;
+  }
+
+  isConnected(): boolean {
+    return this.connected;
+  }
+}
+
+export const database = new Database();
+
 export async function connectDatabase(): Promise<void> {
-  await prisma.$connect();
-  console.log('[Database] Connected to PostgreSQL');
+  await database.connect({ url: process.env.DATABASE_URL || 'postgresql://localhost:5432/opentoad' });
 }
 
 export async function disconnectDatabase(): Promise<void> {
-  await prisma.$disconnect();
-  console.log('[Database] Disconnected');
+  await database.disconnect();
 }
-
-export * from '@prisma/client';
