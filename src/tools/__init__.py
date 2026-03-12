@@ -9,6 +9,7 @@ from .impl.extended import (
     ListDirTool,
     DateTimeTool,
 )
+from .impl.profile_tools import SaveProfileTool, ReadProfileTool
 from .base import Tool, ToolResult, ToolDefinition, ToolParameter
 
 
@@ -21,6 +22,8 @@ def register_default_tools() -> None:
     global_tools.register(WriteFileTool())
     global_tools.register(ListDirTool())
     global_tools.register(DateTimeTool())
+    global_tools.register(SaveProfileTool())
+    global_tools.register(ReadProfileTool())
 
 
 __all__ = [
@@ -39,4 +42,6 @@ __all__ = [
     "WriteFileTool",
     "ListDirTool",
     "DateTimeTool",
+    "SaveProfileTool",
+    "ReadProfileTool",
 ]
