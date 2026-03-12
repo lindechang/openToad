@@ -1,5 +1,7 @@
 import asyncio
 import json
+import os
+import sys
 from ..base import Tool, ToolResult, ToolDefinition, ToolParameter
 
 
@@ -15,7 +17,11 @@ class SaveProfileTool:
     
     async def execute(self, params: dict) -> ToolResult:
         try:
-            from ..profile import load_profile, save_profile, UserProfile
+            src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            project_root = os.path.dirname(src_dir)
+            sys.path.insert(0, project_root)
+            
+            from src.profile import load_profile, save_profile, UserProfile
             
             profile = load_profile()
             profile.name = params.get("name", "")
@@ -31,7 +37,8 @@ class SaveProfileTool:
             else:
                 return ToolResult(success=False, output="", error="保存失败")
         except Exception as e:
-            return ToolResult(success=False, output="", error=str(e))
+            import traceback
+            return ToolResult(success=False, output="", error=f"{str(e)}\n{traceback.format_exc()}")
 
 
 class ReadProfileTool:
