@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
                 self.chat_panel.append_message("Error", f"初始化 agent 失败: {str(e)}")
     
     def _load_settings(self):
-        settings_path = os.path.expanduser("~/.opentoad/settings.json")
+        settings_path = os.path.join(os.getcwd(), "settings.json")
         print(f"Loading settings from: {settings_path}")
         if os.path.exists(settings_path):
             try:
@@ -82,9 +82,7 @@ class MainWindow(QMainWindow):
         }
     
     def _save_settings(self):
-        settings_path = os.path.expanduser("~/.opentoad")
-        os.makedirs(settings_path, exist_ok=True)
-        settings_file = os.path.join(settings_path, "settings.json")
+        settings_file = os.path.join(os.getcwd(), "settings.json")
         print(f"Saving settings to: {settings_file}")
         print(f"Settings to save: {self.settings}")
         try:

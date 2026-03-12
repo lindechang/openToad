@@ -1,5 +1,6 @@
 import json
 import re
+from typing import Optional
 from ..providers import LLMProvider, Message, ChatOptions
 from ..tools import global_tools
 from .types import AgentConfig, AgentState, ToolCall
@@ -49,7 +50,7 @@ class Agent:
         
         return "Max iterations reached"
     
-    def _parse_tool_call(self, content: str) -> ToolCall | None:
+    def _parse_tool_call(self, content: str) -> Optional[ToolCall]:
         match = re.search(r"```json\n(.*?)\n```", content, re.DOTALL)
         if match:
             try:
