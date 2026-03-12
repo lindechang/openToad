@@ -7,38 +7,33 @@ from agent_wrapper import AgentWrapper
 import json
 import os
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🐸 OpenToad - AI Assistant")
         self.setMinimumSize(900, 650)
         
-        # 应用样式
         self._apply_styles()
         
-        # 中心部件
         central = QWidget()
         self.setCentralWidget(central)
         
-        layout = QVBoxLayout(central)
-        layout.setContentsMargins(0, 0, 0, 0)
+        main_layout = QVBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # 标题栏
-        self._create_header()
+        self._create_header(main_layout)
         
-        # 对话面板
         self.chat_panel = ChatPanel()
-        layout.addWidget(self.chat_panel)
+        main_layout.addWidget(self.chat_panel)
         
-        # 工具栏
         self._create_toolbar()
         
-        # 状态栏
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("就绪")
         
-        # 加载设置
         self.settings = self._load_settings()
         self._init_agent()
     
@@ -130,21 +125,15 @@ class MainWindow(QMainWindow):
             }
         """)
     
-    def _create_header(self):
+    def _create_header(self, parent_layout):
         header = QWidget()
-        header.setStyleSheet("""
-            background-color: #2d2d2d;
-            padding: 10px;
-        """)
+        header.setStyleSheet("background-color: #2d2d2d; padding: 10px;")
+        
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(15, 10, 15, 10)
         
         title = QLabel("🐸 OpenToad")
-        title.setStyleSheet("""
-            font-size: 18px;
-            font-weight: bold;
-            color: #4ec9b0;
-        """)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #4ec9b0;")
         
         self.provider_label = QLabel("未连接")
         self.provider_label.setStyleSheet("color: #888; font-size: 12px;")
@@ -153,8 +142,7 @@ class MainWindow(QMainWindow):
         header_layout.addStretch()
         header_layout.addWidget(self.provider_label)
         
-        # 替换顶部布局
-        self.layout().insertWidget(0, header)
+        parent_layout.addWidget(header)
     
     def _create_toolbar(self):
         toolbar = QToolBar()
@@ -225,17 +213,12 @@ class MainWindow(QMainWindow):
     
     def _load_settings(self):
         settings_path = os.path.join(os.getcwd(), "settings.json")
-        print(f"Loading settings from: {settings_path}")
         if os.path.exists(settings_path):
             try:
                 with open(settings_path, "r", encoding="utf-8") as f:
-                    settings = json.load(f)
-                    print(f"Loaded settings: {settings}")
-                    return settings
-            except Exception as e:
-                print(f"Error loading settings: {str(e)}")
+                    return json.load(f)
+            except Exception:
                 pass
-        print("No settings file found, using defaults")
         return {
             "provider": "anthropic",
             "api_key": "",
@@ -244,11 +227,8 @@ class MainWindow(QMainWindow):
     
     def _save_settings(self):
         settings_file = os.path.join(os.getcwd(), "settings.json")
-        print(f"Saving settings to: {settings_file}")
-        print(f"Settings to save: {self.settings}")
         try:
             with open(settings_file, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
-            print("Settings saved successfully")
         except Exception as e:
-            print(f"Error saving settings: {str(e)}")
+            print(f"Error saving settings: {e}")
