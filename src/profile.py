@@ -3,7 +3,9 @@ import os
 from dataclasses import dataclass, asdict
 from typing import Optional, List
 
-PROFILE_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "profile.json")
+src_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(src_dir)
+PROFILE_FILE = os.path.join(project_root, "profile.json")
 
 INTEREST_FIELDS = [
     "数码产品",
