@@ -165,20 +165,13 @@ class MainWindow(QMainWindow):
     
     def _show_settings(self):
         dialog = SettingsDialog(self)
-        dialog.provider_combo.setCurrentIndex(0)
-        for i in range(dialog.provider_combo.count()):
-            if dialog.provider_combo.currentData() == self.settings.get("provider"):
-                dialog.provider_combo.setCurrentIndex(i)
-                break
-        dialog.api_key_input.setText(self.settings.get("api_key", ""))
-        dialog.model_input.setText(self.settings.get("model", ""))
-        dialog.stream_checkbox.setChecked(self.settings.get("stream", True))
-        dialog.max_tokens_spin.setValue(self.settings.get("max_tokens", 1024))
+        dialog.load_settings(self.settings)
         
         if dialog.exec():
             new_settings = dialog.get_settings()
             self.settings = new_settings
             self._save_settings()
+            self._save_profile(new_settings.get("profile", {}))
             self._init_agent()
             self.status_bar.showMessage("设置已保存", 3000)
     
@@ -232,3 +225,22 @@ class MainWindow(QMainWindow):
                 json.dump(self.settings, f, indent=2)
         except Exception as e:
             print(f"Error saving settings: {e}")
+    
+    def _save_profile(self, profile_data):
+        if not profile_data:
+            return
+        try:
+            from src.profile import save_profile, UserProfile
+            profile = UserProfile(
+                name=profile_data.get("name", ""),
+                nickname=profile_data.get("nickname", ""),
+                age_range=profile_data.get("age_range", ""),
+                occupation=profile_data.get("occupation", ""),
+                personality=profile_data.get("personality", ""),
+                interests=profile_data.get("interests", []),
+                price_sensitivity=profile_data.get("price_sensitivity", "mid-range"),
+                decision_factors=profile_data.get("decision_factors", [])
+            )
+            save_profile(profile)
+        except Exception as e:
+            print(f"Error saving profile: {e}")

@@ -3,6 +3,7 @@
 from src.providers import create_provider
 from src.agent import Agent, AgentConfig
 from src.tools import register_default_tools
+from src.profile import load_profile, save_profile, UserProfile, INTEREST_FIELDS, PRICE_SENSITIVITY, DECISION_FACTORS
 import asyncio
 import json
 import os
@@ -197,7 +198,122 @@ def print_help():
         print("  /config   - Show current configuration")
         print("  /models   - List available models")
         print("  /tools    - List available tools")
+        print("  /profile  - Edit user profile")
         print("  /exit     - Exit the program")
+
+
+def print_profile():
+    profile = load_profile()
+    
+    if console:
+        table = Table(title="🐸 用户画像", box=box.ROUNDED)
+        table.add_column("项目", style="cyan bold", no_wrap=True)
+        table.add_column("内容", style="white")
+        
+        table.add_row("名字", profile.name or "未设置")
+        table.add_row("昵称", profile.nickname or "未设置")
+        table.add_row("年龄", profile.age_range or "未设置")
+        table.add_row("职业", profile.occupation or "未设置")
+        table.add_row("性格", profile.personality or "未设置")
+        table.add_row("兴趣领域", profile.get_interests_display())
+        table.add_row("价格敏感度", profile.get_price_sensitivity_display())
+        table.add_row("决策因素", profile.get_decision_factors_display())
+        
+        console.print(table)
+    else:
+        print("\n=== 用户画像 ===")
+        print(f"名字: {profile.name or '未设置'}")
+        print(f"昵称: {profile.nickname or '未设置'}")
+        print(f"年龄: {profile.age_range or '未设置'}")
+        print(f"职业: {profile.occupation or '未设置'}")
+        print(f"性格: {profile.personality or '未设置'}")
+        print(f"兴趣领域: {profile.get_interests_display()}")
+        print(f"价格敏感度: {profile.get_price_sensitivity_display()}")
+        print(f"决策因素: {profile.get_decision_factors_display()}")
+
+
+def edit_profile():
+    profile = load_profile()
+    
+    if console:
+        from rich.prompt import Prompt
+        from rich.checkbox import Checkbox
+        from rich.console import Console
+        
+        console.print("\n[bold cyan]=== 设置用户画像 ===[/bold cyan]\n")
+        
+        # 名字
+        name = Prompt.ask("[yellow]请输入助手名字[/yellow]", default=profile.name or "")
+        profile.name = name
+        
+        # 昵称
+        nickname = Prompt.ask("[yellow]请输入助手昵称(可选)[/yellow]", default=profile.nickname or "")
+        profile.nickname = nickname
+        
+        # 年龄
+        console.print("\n[cyan]年龄范围:[/cyan]")
+        console.print("  1. 18岁以下  2. 18-25岁  3. 26-35岁  4. 36-45岁  5. 45岁以上")
+        age_choice = Prompt.ask("选择", default=profile.age_range or "3")
+        age_map = {"1": "18岁以下", "2": "18-25岁", "3": "26-35岁", "4": "36-45岁", "5": "45岁以上"}
+        profile.age_range = age_map.get(age_choice, "26-35岁")
+        
+        # 职业
+        occupation = Prompt.ask("[yellow]请输入职业[/yellow]", default=profile.occupation or "")
+        profile.occupation = occupation
+        
+        # 性格
+        personality = Prompt.ask("[yellow]请描述助手性格(可选)[/yellow]", default=profile.personality or "")
+        profile.personality = personality
+        
+        # 兴趣领域
+        console.print("\n[cyan]选择感兴趣领域 (多选，用逗号分隔，如: 1,3,5):[/cyan]")
+        for i, field in enumerate(INTEREST_FIELDS, 1):
+            console.print(f"  {i}. {field}")
+        interests_input = Prompt.ask("选择", default=",".join([str(INTEREST_FIELDS.index(i)+1) for i in profile.interests]) if profile.interests else "")
+        if interests_input:
+            try:
+                indices = [int(x.strip()) for x in interests_input.split(",") if x.strip()]
+                profile.interests = [INTEREST_FIELDS[i-1] for i in indices if 1 <= i <= len(INTEREST_FIELDS)]
+            except:
+                pass
+        
+        # 价格敏感度
+        console.print("\n[cyan]价格敏感度:[/cyan]")
+        for i, (key, label) in enumerate(PRICE_SENSITIVITY, 1):
+            console.print(f"  {i}. {label}")
+        price_choice = Prompt.ask("选择", default="2")
+        price_map = {"1": "budget", "2": "mid-range", "3": "premium"}
+        profile.price_sensitivity = price_map.get(price_choice, "mid-range")
+        
+        # 决策因素
+        console.print("\n[cyan]购买决策关注因素 (多选，用逗号分隔):[/cyan]")
+        for i, (key, label) in enumerate(DECISION_FACTORS, 1):
+            console.print(f"  {i}. {label}")
+        factors_input = Prompt.ask("选择", default=",".join([str(DECISION_FACTORS.index(f)+1) for f in profile.decision_factors]) if profile.decision_factors else "")
+        if factors_input:
+            try:
+                indices = [int(x.strip()) for x in factors_input.split(",") if x.strip()]
+                profile.decision_factors = [DECISION_FACTORS[i-1][0] for i in indices if 1 <= i <= len(DECISION_FACTORS)]
+            except:
+                pass
+        
+        save_profile(profile)
+        console.print("\n[green]✓ 用户画像已保存![/green]\n")
+        
+    else:
+        print("\n=== 设置用户画像 ===")
+        
+        name = input("请输入助手名字: ").strip() or profile.name
+        profile.name = name
+        
+        nickname = input("请输入助手昵称(可选): ").strip()
+        profile.nickname = nickname
+        
+        occupation = input("请输入职业: ").strip() or profile.occupation
+        profile.occupation = occupation
+        
+        save_profile(profile)
+        print("\n用户画像已保存!\n")
 
 
 def list_models(provider):
@@ -446,6 +562,13 @@ while True:
     
     if user_input.lower() == "/tools":
         list_tools()
+        continue
+    
+    if user_input.lower() == "/profile":
+        if len(user_input.split()) > 1 and user_input.split()[1] == "edit":
+            edit_profile()
+        else:
+            print_profile()
         continue
     
     conversation_history.append({"role": "user", "content": user_input})
