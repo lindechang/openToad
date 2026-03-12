@@ -77,11 +77,45 @@ cp .env.example .env
 
 ```bash
 # 启动 CLI
-opentoad
+./bin/opentoad
 
 # 启动桌面应用
-opentoad-desktop
+/usr/local/opt/python@3.9/bin/python3 apps/desktop/src/main.py
 ```
+
+### 如何将 opentoad 命令添加到系统 PATH
+
+#### 方法 1：创建别名（推荐）
+
+在 `.zshrc` 文件中添加以下内容：
+
+```bash
+# OpenToad alias
+alias opentoad='/Users/lindechang/Desktop/BOOK/workSpace/aiPrj/openToad/bin/opentoad'
+```
+
+然后执行：
+
+```bash
+source ~/.zshrc
+```
+
+#### 方法 2：添加到 PATH
+
+将以下内容添加到 `.zshrc` 文件：
+
+```bash
+# Add OpenToad to PATH
+export PATH="/Users/lindechang/Desktop/BOOK/workSpace/aiPrj/openToad/bin:$PATH"
+```
+
+然后执行：
+
+```bash
+source ~/.zshrc
+```
+
+这样就可以在任何目录下直接运行 `opentoad` 命令了！
 
 ## 📖 文档
 
