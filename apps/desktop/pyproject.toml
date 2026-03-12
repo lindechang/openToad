@@ -5,7 +5,7 @@ description = "OpenToad Desktop GUI"
 requires-python = ">=3.9"
 dependencies = [
     "PySide6>=6.5.0",
-    "opentoad @ file://../../",
+    "opentoad>=1.0.0",
 ]
 
 [project.scripts]
