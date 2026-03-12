@@ -5,3 +5,11 @@ dist/
 .env
 *.log
 docs/plans/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+venv/
+env/
+.venv/
