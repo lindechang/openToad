@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable, Optional
+from typing import Protocol, runtime_checkable, Optional, Dict
 
 
 @dataclass
@@ -13,7 +13,7 @@ class ToolParameter:
 class ToolDefinition:
     name: str
     description: str
-    parameters: dict[str, ToolParameter]
+    parameters: Dict[str, ToolParameter]
 
 
 @dataclass
