@@ -512,6 +512,23 @@ llm = create_provider(provider, api_key)
 agent = Agent(llm, AgentConfig(model=model or "default", stream=use_stream))
 conversation_history = []
 
+from src.profile import load_profile
+profile = load_profile()
+
+if not profile.name:
+    if console:
+        console.print("\n[bold cyan]🐸 初次见面，让我自我介绍一下...[/bold cyan]\n")
+    greeting = asyncio.run(agent.greet())
+    if console:
+        console.print(Panel(greeting, border_style="cyan", box=box.ROUNDED))
+    else:
+        print(f"\nAI: {greeting}")
+else:
+    if console:
+        console.print(f"\n[green]✓ 欢迎回来，{profile.name}！[/green]\n")
+    else:
+        print(f"\n欢迎回来，{profile.name}！")
+
 while True:
     try:
         if console:

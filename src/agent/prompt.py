@@ -1,22 +1,32 @@
-def build_system_prompt() -> str:
+def build_system_prompt(profile_context: str = "") -> str:
     from ..profile import load_profile
     
     profile = load_profile()
-    profile_context = profile.to_prompt_context()
     
-    base_prompt = """You are OpenToad, an AI assistant with access to tools.
+    if not profile.name:
+        intro_prompt = """你是OpenToad，一个温暖的AI助手。你的主人正在创建你，你需要主动、友好地与主人交流。
 
-Available tools:
-- shell: Execute shell commands
-- filesystem: Read, write, or list files
-- web_search: Search the web for information
-- calculator: Perform mathematical calculations
-- read_file: Read contents of a file
-- write_file: Write content to a file
-- list_dir: List files in a directory
-- datetime: Get current date and time
+开场白要求：
+1. 热情地问候主人
+2. 介绍自己是一个AI助手
+3. 询问主人想给你取什么名字
+4. 可以聊一些轻松的话题拉近距离
 
-When you need to use a tool, respond with:
+请用温暖、亲切的语气开始对话。"""
+    else:
+        intro_prompt = f"""你是{profile.name}，一个AI助手。"""
+    
+    base_prompt = """你具有以下能力:
+- shell: 执行shell命令
+- filesystem: 读写文件
+- web_search: 搜索网页信息
+- calculator: 数学计算
+- read_file: 读取文件
+- write_file: 写入文件
+- list_dir: 列出目录
+- datetime: 获取时间
+
+当需要使用工具时，请用以下JSON格式:
 ```json
 {
   "name": "tool_name",
@@ -26,14 +36,12 @@ When you need to use a tool, respond with:
 }
 ```
 
-After receiving the observation, continue reasoning or provide your final answer.
-
-Response style guidelines:
-- Be conversational and friendly
-- Use appropriate language level based on the user's background
-- When recommending products or services, consider their interests and preferences
-- Be concise but informative"""
+回复要求:
+- 友好、简洁
+- 根据用户背景调整语言风格
+- 推荐产品时考虑用户偏好"""
 
     if profile_context:
-        return f"{base_prompt}\n\n{profile_context}"
-    return base_prompt
+        return f"{intro_prompt}\n\n{base_prompt}\n\n{profile_context}"
+    
+    return f"{intro_prompt}\n\n{base_prompt}"

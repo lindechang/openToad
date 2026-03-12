@@ -199,10 +199,26 @@ class MainWindow(QMainWindow):
                 provider_name = self.settings["provider"]
                 self.provider_label.setText(f"✓ {provider_name}")
                 self.status_bar.showMessage(f"已连接到 {provider_name}", 3000)
+                
+                self._first_greeting(agent)
             except Exception as e:
                 self.chat_panel.append_message("Error", f"初始化失败: {str(e)}")
                 self.provider_label.setText("✗ 连接失败")
                 self.status_bar.showMessage(f"连接失败: {str(e)}", 5000)
+    
+    def _first_greeting(self, agent):
+        try:
+            from src.profile import load_profile
+            profile = load_profile()
+            
+            if not profile.name:
+                import asyncio
+                greeting = asyncio.run(agent.greet())
+                self.chat_panel.append_message("OpenToad", greeting)
+            else:
+                self.chat_panel.append_message("OpenToad", f"你好！我是{profile.name}，很高兴见到你！有什么我可以帮你的吗？")
+        except Exception as e:
+            print(f"Greeting error: {e}")
     
     def _load_settings(self):
         settings_path = os.path.join(os.getcwd(), "settings.json")

@@ -13,9 +13,33 @@ class Agent:
         self.config = config
     
     async def run(self, user_input: str) -> str:
+        return await self._run_with_prompt(user_input)
+    
+    async def greet(self) -> str:
+        from ..profile import load_profile
+        profile = load_profile()
+        
+        if profile.name:
+            greeting = f"你好！我是{profile.name}，你的AI助手。有什么我可以帮你的吗？"
+            return greeting
+        
+        return await self._run_with_prompt("")
+    
+    async def _run_with_prompt(self, user_input: str) -> str:
+        profile_context = ""
+        from ..profile import load_profile
+        profile = load_profile()
+        if profile.name:
+            profile_context = profile.to_prompt_context()
+        
+        system_prompt = build_system_prompt(profile_context)
+        
+        if not user_input:
+            user_input = "你好，请介绍一下自己"
+        
         state = AgentState(
             messages=[
-                Message(role="system", content=build_system_prompt()),
+                Message(role="system", content=system_prompt),
                 Message(role="user", content=user_input)
             ]
         )

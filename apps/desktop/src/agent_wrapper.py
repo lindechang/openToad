@@ -30,3 +30,6 @@ class AgentWrapper:
     
     async def _chat_stream_async(self, message: str, callback) -> str:
         return await self.agent.run(message)
+    
+    def greet(self) -> str:
+        return asyncio.run(self.agent.greet())
