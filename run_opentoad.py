@@ -121,26 +121,63 @@ def print_history():
 
 
 def print_banner():
+    console = None
+    try:
+        from rich.console import Console
+        console = Console()
+    except ImportError:
+        pass
+    
     if console:
         console.clear()
-        banner = """
-╔═══════════════════════════════════════════════════╗
-║                                                   ║
-║   🐸  OpenToad - Self-Sustainable AI Assistant    ║
-║                                                   ║
-╚═══════════════════════════════════════════════════╝
-        """
-        console.print(banner, style="cyan bold")
+        from rich.panel import Panel
+        from rich.text import Text
+        
+        banner_text = Text("🐸 OpenToad", style="bold cyan")
+        banner_text.append(" - Self-Sustainable AI Assistant", style="cyan")
+        
+        from rich.box import DOUBLE
+        panel = Panel(
+            banner_text,
+            border_style="green",
+            box=DOUBLE,
+            expand=False,
+            padding=(1, 4)
+        )
+        console.print(panel)
+        console.print()
+        
+        # System information
+        import platform
+        import sys
+        from rich.table import Table
+        
+        from rich.box import SIMPLE
+        sys_info = Table(box=SIMPLE, expand=False, show_header=False)
+        sys_info.add_row("Platform:", platform.platform())
+        sys_info.add_row("Python:", f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+        console.print(sys_info)
+        console.print()
     else:
-        console = type('obj', (object,), {'print': print})()
         print("=" * 55)
-        print("  OpenToad - Self-Sustainable AI Assistant")
+        print("  🐸 OpenToad - Self-Sustainable AI Assistant")
         print("=" * 55)
         print()
 
 
 def print_help():
-    if console:
+    console = None
+    Table = None
+    box = None
+    try:
+        from rich.console import Console
+        from rich.table import Table
+        from rich.box import box
+        console = Console()
+    except ImportError:
+        pass
+    
+    if console and Table and box:
         table = Table(title="Available Commands", box=box.ROUNDED)
         table.add_column("Command", style="cyan", no_wrap=True)
         table.add_column("Description", style="white")
@@ -362,9 +399,9 @@ conversation_history = []
 while True:
     try:
         if console:
-            user_input = Prompt.ask("[bold green]➜[/bold green] ")
+            user_input = Prompt.ask("[bold green]You[/bold green] [dim]>>[/dim] ")
         else:
-            user_input = input("\n➜ ").strip()
+            user_input = input("\nYou >> ").strip()
     except (EOFError, KeyboardInterrupt):
         if console:
             console.print("\n[yellow]Goodbye![/yellow]")
@@ -417,13 +454,28 @@ while True:
         if console:
             console.print(f"\n[dim]Thinking...[/dim]", end="\r")
         
+        if console:
+            console.print("[bold blue]AI[/bold blue] [dim]>>[/dim] ", end="")
+        else:
+            print("AI >> ", end="")
+        
         if use_stream:
             response = asyncio.run(agent.run(user_input))
+            if console:
+                console.print()
         else:
             response = asyncio.run(agent.run(user_input))
             if console:
                 console.print()
-                console.print(Panel(response, border_style="blue", box=box.ROUNDED))
+                from rich.panel import Panel
+                from rich.box import ROUNDED
+                panel = Panel(
+                    response,
+                    border_style="blue",
+                    box=ROUNDED,
+                    padding=(1, 2)
+                )
+                console.print(panel)
             else:
                 print(response)
         
