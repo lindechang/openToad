@@ -7,6 +7,7 @@ class AgentConfig:
     model: str
     temperature: float = 0.7
     max_iterations: int = 10
+    stream: bool = False
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Optional
+from typing import Optional, Callable
 from ..providers import LLMProvider, Message, ChatOptions
 from ..tools import global_tools
 from .types import AgentConfig, AgentState, ToolCall
@@ -21,17 +21,21 @@ class Agent:
         )
         
         for _ in range(self.config.max_iterations):
-            response = self.provider.chat(ChatOptions(
-                model=self.config.model,
-                messages=state.messages,
-                temperature=self.config.temperature
-            ))
+            if self.config.stream:
+                response = await self._run_stream(state)
+            else:
+                response = self.provider.chat(ChatOptions(
+                    model=self.config.model,
+                    messages=state.messages,
+                    temperature=self.config.temperature
+                ))
+                response = response.content
             
-            state.messages.append(Message(role="assistant", content=response.content))
+            state.messages.append(Message(role="assistant", content=response))
             
-            tool_call = self._parse_tool_call(response.content)
+            tool_call = self._parse_tool_call(response)
             if not tool_call:
-                return response.content
+                return response
             
             tool = global_tools.get(tool_call.name)
             if not tool:
@@ -49,6 +53,24 @@ class Agent:
             ))
         
         return "Max iterations reached"
+    
+    async def _run_stream(self, state: AgentState) -> str:
+        full_content = []
+        
+        def on_chunk(text: str):
+            full_content.append(text)
+            print(text, end="", flush=True)
+        
+        response = self.provider.chat_stream(
+            ChatOptions(
+                model=self.config.model,
+                messages=state.messages,
+                temperature=self.config.temperature
+            ),
+            on_chunk
+        )
+        print()
+        return "".join(full_content) if full_content else response.content
     
     def _parse_tool_call(self, content: str) -> Optional[ToolCall]:
         match = re.search(r"```json\n(.*?)\n```", content, re.DOTALL)

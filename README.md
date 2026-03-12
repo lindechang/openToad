@@ -83,7 +83,7 @@ cp .env.example .env
 ./bin/opentoad
 
 # 启动桌面应用
-python apps/desktop/src/main.py
+/usr/local/opt/python@3.9/bin/python3 apps/desktop/src/main.py
 ```
 
 ### 配置保存功能
