@@ -1,4 +1,5 @@
 import anthropic
+from typing import Optional
 from .types import LLMProvider, ChatOptions, ChatResponse, Message
 
 
@@ -28,7 +29,7 @@ class AnthropicProvider:
             finish_reason="stop" if response.stop_reason == "end_turn" else "length"
         )
     
-    def _extract_system(self, messages: list[Message]) -> str | None:
+    def _extract_system(self, messages: list[Message]) -> Optional[str]:
         for msg in messages:
             if msg.role == "system":
                 return msg.content

@@ -1,3 +1,4 @@
+from typing import Optional
 from .base import Tool, ToolDefinition
 
 
@@ -8,7 +9,7 @@ class ToolRegistry:
     def register(self, tool: Tool) -> None:
         self._tools[tool.definition.name] = tool
     
-    def get(self, name: str) -> Tool | None:
+    def get(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
     
     def list(self) -> list[ToolDefinition]:

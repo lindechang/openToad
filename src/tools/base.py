@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, Optional
 
 
 @dataclass
@@ -20,7 +20,7 @@ class ToolDefinition:
 class ToolResult:
     success: bool
     output: str
-    error: str | None = None
+    error: Optional[str] = None
 
 
 @runtime_checkable

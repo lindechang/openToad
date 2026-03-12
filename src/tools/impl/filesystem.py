@@ -18,21 +18,20 @@ class FilesystemTool:
         path = Path(params["path"])
         
         try:
-            match action:
-                case "read":
-                    if not path.exists():
-                        return ToolResult(success=False, output="", error="File not found")
-                    content = path.read_text(encoding="utf-8")
-                    return ToolResult(success=True, output=content)
-                case "write":
-                    path.write_text(params.get("content", ""), encoding="utf-8")
-                    return ToolResult(success=True, output="File written")
-                case "list":
-                    if not path.is_dir():
-                        return ToolResult(success=False, output="", error="Not a directory")
-                    files = "\n".join(p.name for p in path.iterdir())
-                    return ToolResult(success=True, output=files)
-                case _:
-                    return ToolResult(success=False, output="", error="Unknown action")
+            if action == "read":
+                if not path.exists():
+                    return ToolResult(success=False, output="", error="File not found")
+                content = path.read_text(encoding="utf-8")
+                return ToolResult(success=True, output=content)
+            elif action == "write":
+                path.write_text(params.get("content", ""), encoding="utf-8")
+                return ToolResult(success=True, output="File written")
+            elif action == "list":
+                if not path.is_dir():
+                    return ToolResult(success=False, output="", error="Not a directory")
+                files = "\n".join(p.name for p in path.iterdir())
+                return ToolResult(success=True, output=files)
+            else:
+                return ToolResult(success=False, output="", error="Unknown action")
         except Exception as e:
             return ToolResult(success=False, output="", error=str(e))

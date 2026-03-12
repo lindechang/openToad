@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, Optional
 
 
 @dataclass
@@ -12,8 +12,8 @@ class Message:
 class ChatOptions:
     model: str
     messages: list[Message]
-    temperature: float | None = None
-    max_tokens: int | None = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
     stream: bool = False
 
 

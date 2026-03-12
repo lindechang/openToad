@@ -1,3 +1,4 @@
+from typing import Optional
 from .anthropic import AnthropicProvider
 from .openai import OpenAIProvider
 from .deepseek import DeepSeekProvider
@@ -5,7 +6,7 @@ from .ollama import OllamaProvider
 from .types import LLMProvider, ChatOptions, ChatResponse, Message
 
 
-def create_provider(type: str, api_key: str, base_url: str | None = None) -> LLMProvider:
+def create_provider(type: str, api_key: str, base_url: Optional[str] = None) -> LLMProvider:
     providers = {
         "anthropic": AnthropicProvider,
         "openai": OpenAIProvider,
