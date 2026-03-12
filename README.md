@@ -31,6 +31,7 @@ OpenToad 是从零构建的 **AI Agent 框架**，完全自主可控，不依赖
 ## ✨ 特性
 
 - **CLI 对话** - 终端直接交互，支持流式响应
+- **桌面应用** - 跨平台 GUI 界面，支持 Windows、macOS、Linux
 - **ReAct 推理循环** - 思维链可视化，Tool 调用编排
 - **Tool 系统** - Shell 执行、文件操作、网页搜索、计算器
 - **多模型支持**
@@ -43,8 +44,8 @@ OpenToad 是从零构建的 **AI Agent 框架**，完全自主可控，不依赖
 
 ### 环境要求
 
-- Node.js 22+
-- pnpm 9+
+- Python 3.9+
+- pip 20.0+
 
 ### 安装
 
@@ -53,11 +54,11 @@ OpenToad 是从零构建的 **AI Agent 框架**，完全自主可控，不依赖
 git clone https://github.com/opentoad/opentoad.git
 cd opentoad
 
-# 安装依赖
-pnpm install
+# 安装核心依赖
+pip install -e .
 
-# 构建
-pnpm build
+# 安装桌面应用依赖
+pip install -e apps/desktop
 ```
 
 ### 配置
@@ -76,10 +77,10 @@ cp .env.example .env
 
 ```bash
 # 启动 CLI
-pnpm start
+opentoad
 
-# 或开发模式
-pnpm dev
+# 启动桌面应用
+opentoad-desktop
 ```
 
 ## 📖 文档
@@ -88,21 +89,26 @@ pnpm dev
 - [配置说明](docs/configuration/README.md)
 - [模型接入](docs/providers/README.md)
 - [Tool 开发](docs/tools/README.md)
+- [桌面应用](docs/desktop/README.md)
 
 ## 🏗️ 项目结构
 
 ```
 opentoad/
-├── src/
+├── src/                # 核心代码
 │   ├── cli/           # CLI 入口
 │   ├── agent/         # Agent 推理核心
 │   ├── tools/         # Tool 系统
 │   │   └── impl/          # 内置 Tools
 │   └── providers/    # LLM Provider
-│       ├── anthropic.ts   # Claude
-│       ├── openai.ts      # GPT
-│       ├── deepseek.ts    # DeepSeek
-│       └── ollama.ts      # 自部署
+│       ├── anthropic.py   # Claude
+│       ├── openai.py      # GPT
+│       ├── deepseek.py    # DeepSeek
+│       └── ollama.py      # 自部署
+├── apps/              # 应用
+│   └── desktop/      # 桌面应用
+│       ├── src/         # 桌面应用源码
+│       └── pyproject.toml # 桌面应用配置
 ├── test/              # 测试
 └── docs/              # 文档
 ```
@@ -111,13 +117,13 @@ opentoad/
 
 ```bash
 # 运行测试
-pnpm test
+python -m pytest
 
 # 代码检查
-pnpm check
+python -m mypy src/
 
 # 代码格式化
-pnpm format
+python -m black src/
 ```
 
 ## 🤝 贡献
