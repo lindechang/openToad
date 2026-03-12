@@ -77,6 +77,7 @@ cp .env.example .env
 
 ### 运行
 
+#### macOS / Linux
 ```bash
 # 启动 CLI (推荐，支持配置保存)
 ./opentoad.sh
@@ -85,12 +86,21 @@ cp .env.example .env
 ./bin/opentoad
 
 # 启动桌面应用
-/usr/local/opt/python@3.9/bin/python3 apps/desktop/src/main.py
+python3 apps/desktop/src/main.py
+```
+
+#### Windows
+```batch
+# 启动 CLI (推荐，支持配置保存)
+opentoad.bat
+
+# 启动桌面应用
+python apps/desktop/src/main.py
 ```
 
 ### 配置保存功能
 
-OpenToad 现在支持配置保存功能，当您首次运行 `./opentoad.sh` 时，系统会提示您选择提供商、模型并输入 API key，这些配置会自动保存到 `config.json` 文件中。
+OpenToad 现在支持配置保存功能，当您首次运行 `./opentoad.sh`（macOS/Linux）或 `opentoad.bat`（Windows）时，系统会提示您选择提供商、模型并输入 API key，这些配置会自动保存到 `config.json` 文件中。
 
 下次运行时，系统会加载保存的配置并询问您是否使用它，这样您就不需要重复输入 API key 了。
 
