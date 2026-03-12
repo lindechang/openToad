@@ -4,17 +4,27 @@
   "description": "Self-Sustainable AI Assistant",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "opentoad": "./dist/cli/index.js"
+  },
   "scripts": {
-    "build": "pnpm -r run build",
-    "dev": "pnpm -r run dev",
-    "test": "vitest",
-    "lint": "pnpm -r run lint"
+    "build": "tsc",
+    "start": "node dist/cli/index.js",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest"
   },
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "openai": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
   }
 }

@@ -15,6 +15,6 @@
     "sourceMap": true,
     "outDir": "./dist"
   },
-  "include": ["src/**/*", "packages/**/*", "extensions/**/*"],
-  "exclude": ["node_modules", "dist", "**/node_modules", "openclaw"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/node_modules"]
 }
