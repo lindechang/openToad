@@ -1,0 +1,25 @@
+{
+  "name": "@opentoad/gateway",
+  "version": "1.0.0",
+  "description": "Gateway server for OpenToad",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "gateway": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "opentoad": "workspace:*",
+    "@opentoad/monetization": "workspace:*",
+    "@opentoad/database": "workspace:*",
+    "hono": "^4.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

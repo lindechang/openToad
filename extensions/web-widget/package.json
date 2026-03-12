@@ -1,0 +1,14 @@
+{
+  "name": "@opentoad/web-widget",
+  "version": "1.0.0",
+  "description": "Web Widget channel plugin for OpenToad",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "opentoad": "workspace:*",
+    "hono": "^4.12.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
