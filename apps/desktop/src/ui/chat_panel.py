@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushB
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QTimer
 from PySide6.QtGui import QTextCursor, QColor, QPalette
 
-class AgentWorker(QObject):
+class ChatWorker(QThread):
     finished = Signal(str)
     error = Signal(str)
     streaming = Signal(str)
@@ -133,7 +133,7 @@ class ChatPanel(QWidget):
         
         stream_enabled = getattr(self.agent, 'stream_enabled', True)
         
-        self.worker = AgentWorker(self.agent, message, stream_enabled)
+        self.worker = ChatWorker(self.agent, message, stream_enabled)
         self.worker.streaming.connect(self._on_streaming)
         self.worker.finished.connect(self._on_result)
         self.worker.error.connect(self._on_error)
