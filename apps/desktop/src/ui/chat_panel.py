@@ -137,7 +137,7 @@ class ChatPanel(QWidget):
         self.worker.streaming.connect(self._on_streaming)
         self.worker.finished.connect(self._on_result)
         self.worker.error.connect(self._on_error)
-        self.worker.run()
+        self.worker.start()
     
     def _on_streaming(self, text: str):
         self.current_streaming_message += text
@@ -196,6 +196,22 @@ class ChatPanel(QWidget):
         )
     
     def _update_last_message(self, role: str, content: str, is_streaming=False):
+        cursor = self.chat_display.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        
+        # 找到最后一个消息的开始位置
+        while cursor.position() > 0:
+            cursor.movePosition(QTextCursor.PreviousBlock)
+            text = cursor.block().text()
+            if "👤 You" in text or "🐸 OpenToad" in text or "⚠️ Error" in text:
+                cursor.movePosition(QTextCursor.StartOfBlock)
+                break
+        
+        # 选择从消息开始到末尾的所有内容
+        cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
+        
+        # 重新添加消息
         self.append_message(role, content, is_streaming=is_streaming)
     
     def _format_content(self, content: str):

@@ -6,6 +6,12 @@
 </p>
 
 <p align="center">
+  <a href="https://opentoad.cn" target="_blank">
+    <img src="https://img.shields.io/website?url=https%3A%2F%2Fopentoad.cn&label=官网" alt="官网" />
+  </a>
+</p>
+
+<p align="center">
   <a href="#">
     <img src="https://img.shields.io/github/stars/opentoad/opentoad?style=flat" alt="stars" />
   </a>
@@ -108,6 +114,7 @@ OpenToad 现在支持配置保存功能，当您首次运行 `./opentoad.sh`（m
 
 ## 📖 文档
 
+- [官网](https://opentoad.cn)
 - [安装指南](docs/getting-started/installation.md)
 - [配置说明](docs/configuration/README.md)
 - [模型接入](docs/providers/README.md)
