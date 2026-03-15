@@ -1,6 +1,9 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QTimer
-from PySide6.QtGui import QTextCursor, QColor, QPalette
+from PySide6.QtGui import QTextCursor, QColor, QPalette, QKeyEvent, QFont, QTextCharFormat, QTextFormat
+import re
+from datetime import datetime
+
 
 class ChatWorker(QThread):
     finished = Signal(str)
@@ -51,6 +54,7 @@ class ChatPanel(QWidget):
                 color: #d4d4d4;
             }
         """)
+        self.chat_display.setFont(QFont("SF Pro Text", 13))
         layout.addWidget(self.chat_display)
         
         # 输入区域
@@ -64,7 +68,7 @@ class ChatPanel(QWidget):
         input_layout.setContentsMargins(10, 5, 10, 5)
         
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText("输入消息... (Enter 发送)")
+        self.input_field.setPlaceholderText("输入消息... (Enter 发送, Ctrl+Shift+S 清空)")
         self.input_field.setStyleSheet("""
             QLineEdit {
                 background-color: #3c3c3c;
@@ -76,6 +80,9 @@ class ChatPanel(QWidget):
             }
             QLineEdit::placeholder {
                 color: #888;
+            }
+            QLineEdit:focus {
+                border: 2px solid #0e639c;
             }
         """)
         self.input_field.returnPressed.connect(self._send_message)
@@ -111,6 +118,14 @@ class ChatPanel(QWidget):
         self.agent = None
         self.worker = None
         self.current_streaming_message = ""
+        self.last_message_role = None
+        self.input_field.setFocus()
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_L:
+            self.clear()
+        else:
+            super().keyPressEvent(event)
     
     def set_agent(self, agent):
         self.agent = agent
@@ -127,9 +142,11 @@ class ChatPanel(QWidget):
         self.append_message("You", message, is_user=True)
         self.input_field.clear()
         self.send_button.setEnabled(False)
+        self.send_button.setText("⏳")
         self.input_field.setPlaceholderText("正在思考...")
         
         self.current_streaming_message = ""
+        self.last_message_role = None
         
         stream_enabled = getattr(self.agent, 'stream_enabled', True)
         
@@ -137,7 +154,7 @@ class ChatPanel(QWidget):
         self.worker.streaming.connect(self._on_streaming)
         self.worker.finished.connect(self._on_result)
         self.worker.error.connect(self._on_error)
-        self.worker.run()
+        self.worker.start()
     
     def _on_streaming(self, text: str):
         self.current_streaming_message += text
@@ -146,14 +163,20 @@ class ChatPanel(QWidget):
     def _on_result(self, result: str):
         self.append_message("OpenToad", result, is_streaming=False)
         self.send_button.setEnabled(True)
+        self.send_button.setText("发送")
         self.input_field.setPlaceholderText("输入消息... (Enter 发送)")
+        self.input_field.setFocus()
     
     def _on_error(self, error: str):
         self.append_message("Error", f"❌ {error}", is_error=True)
         self.send_button.setEnabled(True)
+        self.send_button.setText("发送")
         self.input_field.setPlaceholderText("输入消息... (Enter 发送)")
+        self.input_field.setFocus()
     
     def append_message(self, role: str, content: str, is_user=False, is_error=False, is_streaming=False):
+        timestamp = datetime.now().strftime("%H:%M")
+        
         colors = {
             "You": "#569cd6",
             "OpenToad": "#4ec9b0",
@@ -161,34 +184,66 @@ class ChatPanel(QWidget):
             "Error": "#f44747"
         }
         
+        icons = {
+            "You": "👤",
+            "OpenToad": "🐸",
+            "System": "⚙️",
+            "Error": "⚠️"
+        }
+        
         color = colors.get(role, "#d4d4d4")
+        icon = icons.get(role, "💬")
         
         if is_user:
-            html = f'<div style="margin: 10px 0;">' \
-                   f'<span style="color: {color}; font-weight: bold; font-size: 14px;">👤 You</span><br>' \
-                   f'<span style="color: #d4d4d4; font-size: 14px; line-height: 1.5;">{self._format_content(content)}</span>' \
-                   f'</div>'
+            html = f'''
+            <div style="margin: 12px 0; padding: 12px; background-color: #2d4a3e; border-radius: 12px; border-left: 4px solid #4ec9b0;">
+                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
+                    {icon} You · {timestamp}
+                </div>
+                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                    {self._format_content(content)}
+                </div>
+            </div>
+            '''
         elif is_error:
-            html = f'<div style="margin: 10px 0; padding: 10px; background-color: #3c2020; border-radius: 5px;">' \
-                   f'<span style="color: {color}; font-weight: bold; font-size: 14px;">⚠️ Error</span><br>' \
-                   f'<span style="color: #d4d4d4; font-size: 14px; line-height: 1.5;">{self._format_content(content)}</span>' \
-                   f'</div>'
+            html = f'''
+            <div style="margin: 12px 0; padding: 12px; background-color: #3c2020; border-radius: 12px; border-left: 4px solid #f44747;">
+                <div style="color: #f44747; font-size: 11px; margin-bottom: 6px;">
+                    {icon} Error · {timestamp}
+                </div>
+                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                    {self._format_content(content)}
+                </div>
+            </div>
+            '''
         elif is_streaming:
             cursor = self.chat_display.textCursor()
             cursor.movePosition(QTextCursor.End)
-            cursor.select(QTextCursor.LineUnderCursor)
+            cursor.select(QTextCursor.BlockUnderCursor)
             cursor.removeSelectedText()
             cursor.deleteChar()
             
-            html = f'<div style="margin: 10px 0;">' \
-                   f'<span style="color: {color}; font-weight: bold; font-size: 14px;">🐸 OpenToad</span><br>' \
-                   f'<span style="color: #d4d4d4; font-size: 14px; line-height: 1.5;">{self._format_content(content)}</span><span style="color: #666;">▌</span>' \
-                   f'</div>'
+            html = f'''
+            <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
+                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
+                    {icon} OpenToad · {timestamp}
+                </div>
+                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                    {self._format_content(content)}<span style="color: #666;">▌</span>
+                </div>
+            </div>
+            '''
         else:
-            html = f'<div style="margin: 10px 0;">' \
-                   f'<span style="color: {color}; font-weight: bold; font-size: 14px;">🐸 OpenToad</span><br>' \
-                   f'<span style="color: #d4d4d4; font-size: 14px; line-height: 1.5;">{self._format_content(content)}</span>' \
-                   f'</div>'
+            html = f'''
+            <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
+                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
+                    {icon} OpenToad · {timestamp}
+                </div>
+                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                    {self._format_content(content)}
+                </div>
+            </div>
+            '''
         
         self.chat_display.append(html)
         self.chat_display.verticalScrollBar().setValue(
@@ -196,16 +251,51 @@ class ChatPanel(QWidget):
         )
     
     def _update_last_message(self, role: str, content: str, is_streaming=False):
-        self.append_message(role, content, is_streaming=is_streaming)
+        cursor = self.chat_display.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        
+        cursor.movePosition(QTextCursor.PreviousBlock)
+        
+        timestamp = datetime.now().strftime("%H:%M")
+        icon = "🐸"
+        
+        html = f'''
+        <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
+            <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
+                {icon} OpenToad · {timestamp}
+            </div>
+            <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                {self._format_content(content)}{'<span style="color: #666;">▌</span>' if is_streaming else ''}
+            </div>
+        </div>
+        '''
+        
+        cursor.select(QTextCursor.BlockUnderCursor)
+        cursor.removeSelectedText()
+        
+        self.chat_display.append(html)
+        self.chat_display.verticalScrollBar().setValue(
+            self.chat_display.verticalScrollBar().maximum()
+        )
     
     def _format_content(self, content: str):
         content = content.replace("&", "&amp;")
         content = content.replace("<", "&lt;")
         content = content.replace(">", "&gt;")
-        content = content.replace("\n", "<br>")
         
-        content = content.replace("```", "&nbsp;```&nbsp;")
-        content = content.replace("`", "&nbsp;`&nbsp;")
+        content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', content)
+        content = re.sub(r'\*(.+?)\*', r'<em>\1</em>', content)
+        content = re.sub(r'`(.+?)`', r'<code style="background: #3c3c3c; padding: 2px 6px; border-radius: 3px; font-family: monospace;">\1</code>', content)
+        
+        code_block_pattern = r'```(\w+)?\n(.*?)```'
+        def code_block_replace(match):
+            lang = match.group(1) or ''
+            code = match.group(2)
+            return f'<pre style="background: #1e1e1e; padding: 12px; border-radius: 6px; overflow-x: auto;"><code>{code}</code></pre>'
+        
+        content = re.sub(code_block_pattern, code_block_replace, content, flags=re.DOTALL)
+        
+        content = content.replace("\n", "<br>")
         
         return content
     
