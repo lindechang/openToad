@@ -1,6 +1,8 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStatusBar, QToolBar, QMessageBox
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QAction, QIcon, QPalette, QColor
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+    QLabel, QStatusBar, QListWidget, QListWidgetItem, QStackedWidget, QScrollArea, 
+    QMessageBox, QPushButton)
+from PySide6.QtCore import Qt, QTimer, QSize
+from PySide6.QtGui import QIcon, QPalette, QColor, QFont
 from ui.chat_panel import ChatPanel
 from ui.settings_dialog import SettingsDialog
 from agent_wrapper import AgentWrapper
@@ -9,6 +11,11 @@ import os
 
 
 class MainWindow(QMainWindow):
+    NAV_CHAT = 0
+    NAV_SETTINGS = 1
+    NAV_ABOUT = 2
+    NAV_HELP = 3
+    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🐸 OpenToad - AI Assistant")
@@ -19,20 +26,14 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         
-        main_layout = QVBoxLayout(central)
+        main_layout = QHBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        self._create_header(main_layout)
+        self._create_sidebar(main_layout)
+        self._create_content(main_layout)
         
-        self.chat_panel = ChatPanel()
-        main_layout.addWidget(self.chat_panel)
-        
-        self._create_toolbar()
-        
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("就绪")
+        self._create_status_bar()
         
         self.settings = self._load_settings()
         self._init_agent()
@@ -123,69 +124,182 @@ class MainWindow(QMainWindow):
                 background-color: #007acc;
                 color: white;
             }
+            QListWidget {
+                background-color: #252526;
+                border: none;
+                padding: 10px;
+            }
+            QListWidget::item {
+                padding: 12px 15px;
+                border-radius: 8px;
+                margin: 4px 0;
+                color: #d4d4d4;
+            }
+            QListWidget::item:selected {
+                background-color: #0e639c;
+                color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #3c3c3c;
+            }
         """)
     
-    def _create_header(self, parent_layout):
-        header = QWidget()
-        header.setStyleSheet("background-color: #2d2d2d; padding: 10px;")
+    def _create_sidebar(self, parent_layout):
+        sidebar = QWidget()
+        sidebar.setFixedWidth(180)
+        sidebar.setStyleSheet("background-color: #252526;")
         
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(15, 10, 15, 10)
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(10, 20, 10, 10)
+        sidebar_layout.setSpacing(5)
         
         title = QLabel("🐸 OpenToad")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #4ec9b0;")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #4ec9b0; padding: 10px;")
+        title.setAlignment(Qt.AlignCenter)
+        sidebar_layout.addWidget(title)
         
         self.provider_label = QLabel("未连接")
-        self.provider_label.setStyleSheet("color: #888; font-size: 12px;")
+        self.provider_label.setStyleSheet("color: #888; font-size: 11px; padding-bottom: 20px;")
+        self.provider_label.setAlignment(Qt.AlignCenter)
+        sidebar_layout.addWidget(self.provider_label)
         
-        header_layout.addWidget(title)
-        header_layout.addStretch()
-        header_layout.addWidget(self.provider_label)
+        self.nav_list = QListWidget()
+        self.nav_list.setStyleSheet("QListWidget { background-color: transparent; border: none; }")
         
-        parent_layout.addWidget(header)
+        nav_items = [
+            ("💬", "对话"),
+            ("⚙️", "设置"),
+            ("ℹ️", "关于"),
+            ("❓", "帮助"),
+        ]
+        
+        for icon, text in nav_items:
+            item = QListWidgetItem(f"{icon}  {text}")
+            item.setSizeHint(QSize(0, 48))
+            self.nav_list.addItem(item)
+        
+        self.nav_list.currentRowChanged.connect(self._on_nav_changed)
+        self.nav_list.setCurrentRow(0)
+        sidebar_layout.addWidget(self.nav_list)
+        
+        sidebar_layout.addStretch()
+        
+        clear_btn = QPushButton("🗑️ 清空对话")
+        clear_btn.setCursor(Qt.PointingHandCursor)
+        clear_btn.clicked.connect(self._clear_chat)
+        sidebar_layout.addWidget(clear_btn)
+        
+        parent_layout.addWidget(sidebar)
     
-    def _create_toolbar(self):
-        toolbar = QToolBar()
-        toolbar.setMovable(False)
-        self.addToolBar(toolbar)
+    def _create_content(self, parent_layout):
+        self.content_stack = QStackedWidget()
         
-        settings_action = QAction("⚙️ 设置", self)
-        settings_action.triggered.connect(self._show_settings)
-        toolbar.addAction(settings_action)
+        self.chat_panel = ChatPanel()
+        self.content_stack.addWidget(self.chat_panel)
         
-        clear_action = QAction("🗑️ 清空", self)
-        clear_action.triggered.connect(self._clear_chat)
-        toolbar.addAction(clear_action)
+        settings_page = QWidget()
+        settings_layout = QVBoxLayout(settings_page)
+        settings_layout.setContentsMargins(30, 20, 30, 20)
         
-        toolbar.addSeparator()
+        settings_header = QLabel("⚙️ 设置")
+        settings_header.setStyleSheet("font-size: 24px; font-weight: bold; color: #4ec9b0; padding-bottom: 20px;")
+        settings_layout.addWidget(settings_header)
         
-        about_action = QAction("ℹ️ 关于", self)
-        about_action.triggered.connect(self._show_about)
-        toolbar.addAction(about_action)
+        settings_scroll = QScrollArea()
+        settings_scroll.setWidgetResizable(True)
+        settings_scroll.setStyleSheet("QScrollArea { border: none; background-color: #1e1e1e; }")
+        
+        settings_container = QWidget()
+        settings_container_layout = QVBoxLayout(settings_container)
+        
+        self.settings_widget = SettingsDialog(self)
+        self.settings_widget.load_settings(self.settings)
+        settings_container_layout.addWidget(self.settings_widget)
+        
+        settings_scroll.setWidget(settings_container)
+        settings_layout.addWidget(settings_scroll)
+        
+        save_btn = QPushButton("💾 保存设置")
+        save_btn.clicked.connect(self._save_settings_from_ui)
+        settings_layout.addWidget(save_btn)
+        
+        self.content_stack.addWidget(settings_page)
+        
+        about_page = QWidget()
+        about_layout = QVBoxLayout(about_page)
+        about_layout.setContentsMargins(30, 20, 30, 20)
+        
+        about_header = QLabel("ℹ️ 关于")
+        about_header.setStyleSheet("font-size: 24px; font-weight: bold; color: #4ec9b0; padding-bottom: 20px;")
+        about_layout.addWidget(about_header)
+        
+        about_text = QLabel(
+            "🐸 OpenToad v1.0.0\n\n"
+            "Self-Sustainable AI Assistant\n\n"
+            "支持多模型:\n"
+            "Claude, GPT, DeepSeek,\n"
+            "通义千问, 文心一言, 混元,\n"
+            "ChatGLM, Kimi, Gemini"
+        )
+        about_text.setStyleSheet("color: #d4d4d4; font-size: 14px; line-height: 1.8;")
+        about_layout.addWidget(about_text)
+        
+        about_layout.addStretch()
+        self.content_stack.addWidget(about_page)
+        
+        help_page = QWidget()
+        help_layout = QVBoxLayout(help_page)
+        help_layout.setContentsMargins(30, 20, 30, 20)
+        
+        help_header = QLabel("❓ 帮助")
+        help_header.setStyleSheet("font-size: 24px; font-weight: bold; color: #4ec9b0; padding-bottom: 20px;")
+        help_layout.addWidget(help_header)
+        
+        help_text = QLabel(
+            "使用说明：\n\n"
+            "1. 在「设置」中配置您的 API Key\n"
+            "2. 选择您偏好的 AI 模型\n"
+            "3. 开始与 AI 助手对话\n\n"
+            "快捷键：\n"
+            "• Enter - 发送消息\n"
+            "• Ctrl+L - 清空对话"
+        )
+        help_text.setStyleSheet("color: #d4d4d4; font-size: 14px; line-height: 1.8;")
+        help_layout.addWidget(help_text)
+        
+        help_layout.addStretch()
+        self.content_stack.addWidget(help_page)
+        
+        parent_layout.addWidget(self.content_stack)
     
-    def _show_settings(self):
-        dialog = SettingsDialog(self)
-        dialog.load_settings(self.settings)
+    def _on_nav_changed(self, index):
+        self.content_stack.setCurrentIndex(index)
         
-        if dialog.exec():
-            new_settings = dialog.get_settings()
-            self.settings = new_settings
-            self._save_settings()
-            self._save_profile(new_settings.get("profile", {}))
-            self._init_agent()
-            self.status_bar.showMessage("设置已保存", 3000)
+        if index == self.NAV_SETTINGS:
+            self.status_bar.showMessage("设置")
+        elif index == self.NAV_ABOUT:
+            self.status_bar.showMessage("关于")
+        elif index == self.NAV_HELP:
+            self.status_bar.showMessage("帮助")
+        else:
+            self.status_bar.showMessage("对话")
+    
+    def _create_status_bar(self):
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("就绪")
+    
+    def _save_settings_from_ui(self):
+        new_settings = self.settings_widget.get_settings()
+        self.settings = new_settings
+        self._save_settings()
+        self._save_profile(new_settings.get("profile", {}))
+        self._init_agent()
+        self.status_bar.showMessage("设置已保存", 3000)
     
     def _clear_chat(self):
         self.chat_panel.clear()
         self.status_bar.showMessage("对话已清空", 2000)
-    
-    def _show_about(self):
-        QMessageBox.about(self, "关于 OpenToad",
-            "🐸 OpenToad v1.0.0\n\n"
-            "Self-Sustainable AI Assistant\n\n"
-            "支持多模型: Claude, GPT, DeepSeek,\n"
-            "通义千问, 文心一言, 混元, ChatGLM, Kimi, Gemini"
-        )
     
     def _init_agent(self):
         if self.settings.get("api_key"):
