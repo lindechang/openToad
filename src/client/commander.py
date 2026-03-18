@@ -22,7 +22,7 @@ class Command:
 class CommanderService:
     def __init__(self, config: ClientConfig, on_command: Optional[Callable] = None):
         self.config = config
-        self.http_client = HttpClient(config.server_url, config.http_timeout)
+        self.http_client = HttpClient(config.api_base, config.http_timeout)
         self.on_command = on_command
         self._running = False
         self._thread: threading.Thread = None

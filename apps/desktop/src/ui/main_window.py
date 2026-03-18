@@ -8,6 +8,13 @@ from ui.settings_dialog import SettingsDialog
 from agent_wrapper import AgentWrapper
 import json
 import os
+import sys
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.client import InstanceService, ClientConfig
 
 
 class MainWindow(QMainWindow):
@@ -30,13 +37,38 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
+        self.settings = self._load_settings()
+        
         self._create_sidebar(main_layout)
         self._create_content(main_layout)
         
         self._create_status_bar()
         
-        self.settings = self._load_settings()
         self._init_agent()
+        self._init_instance_service()
+    
+    def _init_instance_service(self):
+        try:
+            server_url = self.settings.get("server_url", "http://toadapi.cocofei.com")
+            instance_id = self.settings.get("instance_id")
+            
+            config = ClientConfig()
+            config.server_url = server_url
+            if instance_id:
+                config.instance_id = instance_id
+            
+            self.instance_service = InstanceService(config)
+            self.instance_service.start()
+            
+            if not instance_id:
+                self.settings["instance_id"] = self.instance_service.instance_id
+                self._save_settings()
+            
+            print(f"Instance service started: {self.instance_service.instance_id}")
+        except Exception as e:
+            import traceback
+            print(f"Failed to start instance service: {e}")
+            traceback.print_exc()
     
     def _apply_styles(self):
         self.setStyleSheet("""
@@ -273,6 +305,8 @@ class MainWindow(QMainWindow):
         parent_layout.addWidget(self.content_stack)
     
     def _on_nav_changed(self, index):
+        if not hasattr(self, 'content_stack'):
+            return
         self.content_stack.setCurrentIndex(index)
         
         if index == self.NAV_SETTINGS:
@@ -371,3 +405,12 @@ class MainWindow(QMainWindow):
             save_profile(profile)
         except Exception as e:
             print(f"Error saving profile: {e}")
+    
+    def closeEvent(self, event):
+        if hasattr(self, 'instance_service'):
+            try:
+                self.instance_service.stop()
+                print("Instance service stopped")
+            except Exception as e:
+                print(f"Error stopping instance service: {e}")
+        event.accept()

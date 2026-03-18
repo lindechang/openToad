@@ -27,4 +27,4 @@ class TestClientConfig:
     def test_api_base_property(self):
         config = ClientConfig(server_url="http://localhost:8080")
         
-        assert config.api_base == "http://localhost:8080/api/instance"
+        assert config.api_base == "http://localhost:8080/api"

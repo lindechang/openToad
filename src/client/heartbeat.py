@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class HeartbeatService:
     def __init__(self, config: ClientConfig):
         self.config = config
-        self.http_client = HttpClient(config.server_url, config.http_timeout)
+        self.http_client = HttpClient(config.api_base, config.http_timeout)
         self._running = False
         self._thread: threading.Thread = None
 

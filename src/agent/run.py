@@ -76,7 +76,10 @@ class Agent:
         
         def on_chunk(text: str):
             full_content.append(text)
-            print(text, end="", flush=True)
+            try:
+                print(text, end="", flush=True)
+            except (UnicodeEncodeError, AttributeError):
+                pass
         
         response = self.provider.chat_stream(
             ChatOptions(
@@ -86,7 +89,10 @@ class Agent:
             ),
             on_chunk
         )
-        print()
+        try:
+            print()
+        except UnicodeEncodeError:
+            pass
         return "".join(full_content) if full_content else response.content
     
     def _parse_tool_call(self, content: str) -> Optional[ToolCall]:

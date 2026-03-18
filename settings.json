@@ -1,5 +1,6 @@
 {
   "provider": "deepseek",
   "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
-  "model": "deepseek-chat"
+  "model": "deepseek-chat",
+  "instance_id": "4a70a447-4ffd-499c-872a-835c3ed025bc"
 }

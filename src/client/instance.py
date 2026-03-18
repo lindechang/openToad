@@ -17,7 +17,7 @@ class InstanceInfo:
 class InstanceManager:
     def __init__(self, config: ClientConfig):
         self.config = config
-        self.http_client = HttpClient(config.server_url, config.http_timeout)
+        self.http_client = HttpClient(config.api_base, config.http_timeout)
         self._info: Optional[InstanceInfo] = None
 
     def register(self) -> Dict[str, Any]:
@@ -57,7 +57,7 @@ class InstanceManager:
         )
 
     @staticmethod
-    def _parse_datetime(value: Optional[str]) -> datetime:
+    def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
         if not value:
-            raise ValueError("datetime value is required")
+            return None
         return datetime.fromisoformat(value.replace('Z', '+00:00'))

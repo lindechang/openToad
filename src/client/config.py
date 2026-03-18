@@ -27,18 +27,6 @@ class ClientConfig:
     def __post_init__(self):
         if self.instance_id is None:
             self.instance_id = str(uuid.uuid4())
-        self._load_from_file()
-
-    def _load_from_file(self):
-        config_path = Path(CONFIG_FILE)
-        if config_path.exists():
-            with open(config_path, 'r') as f:
-                data = json.load(f)
-                for key, value in DEFAULT_CONFIG.items():
-                    if key in data:
-                        setattr(self, key, data[key])
-                if self.instance_id is None:
-                    self.instance_id = str(uuid.uuid4())
 
     def save(self):
         config_path = Path(CONFIG_FILE)
@@ -48,4 +36,4 @@ class ClientConfig:
 
     @property
     def api_base(self) -> str:
-        return f"{self.server_url}/api/instance"
+        return f"{self.server_url}/api"
