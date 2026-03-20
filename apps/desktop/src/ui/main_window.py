@@ -23,10 +23,28 @@ class MainWindow(QMainWindow):
     NAV_ABOUT = 2
     NAV_HELP = 3
     
+    def _load_icons(self):
+        self.icons = {}
+        icons_dir = os.path.join(PROJECT_ROOT, 'icons')
+        sizes = {'60': 60, '120': 120, '256': 256, '520': 520}
+        for size, _ in sizes.items():
+            icon_path = os.path.join(icons_dir, f'opentoad-logo-{size}.png')
+            if os.path.exists(icon_path):
+                self.icons[size] = icon_path
+        
+        self.app_icon = os.path.join(icons_dir, 'opentoad-logo-256.png')
+    
+    def _apply_window_icon(self):
+        if os.path.exists(self.app_icon):
+            self.setWindowIcon(QIcon(self.app_icon))
+    
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("🐸 OpenToad - AI Assistant")
+        self.setWindowTitle("OpenToad - AI Assistant")
         self.setMinimumSize(900, 650)
+        
+        self._load_icons()
+        self._apply_window_icon()
         
         self._apply_styles()
         
@@ -185,7 +203,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(10, 20, 10, 10)
         sidebar_layout.setSpacing(5)
         
-        title = QLabel("🐸 OpenToad")
+        title = QLabel("OpenToad")
         title.setStyleSheet("font-size: 16px; font-weight: bold; color: #4ec9b0; padding: 10px;")
         title.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(title)
@@ -266,7 +284,7 @@ class MainWindow(QMainWindow):
         about_layout.addWidget(about_header)
         
         about_text = QLabel(
-            "🐸 OpenToad v1.0.0\n\n"
+            "OpenToad v1.0.0\n\n"
             "Self-Sustainable AI Assistant\n\n"
             "支持多模型:\n"
             "Claude, GPT, DeepSeek,\n"

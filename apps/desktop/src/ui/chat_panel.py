@@ -2,7 +2,19 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushB
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QTimer
 from PySide6.QtGui import QTextCursor, QColor, QPalette, QKeyEvent, QFont, QTextCharFormat, QTextFormat
 import re
+import os
 from datetime import datetime
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))
+
+
+class ChatPanel(QWidget):
+    def _load_icons(self):
+        icons_dir = os.path.join(PROJECT_ROOT, 'icons')
+        self.icon_user = os.path.join(icons_dir, 'opentoad-logo-60.png')
+        self.icon_opentoad = os.path.join(icons_dir, 'opentoad-logo-60.png')
+        self.icon_system = ""
+        self.icon_error = ""
 
 
 class ChatWorker(QThread):
@@ -37,6 +49,7 @@ class ChatPanel(QWidget):
             }
         """)
         
+        self._load_icons()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
@@ -184,15 +197,24 @@ class ChatPanel(QWidget):
             "Error": "#f44747"
         }
         
-        icons = {
-            "You": "👤",
-            "OpenToad": "🐸",
-            "System": "⚙️",
-            "Error": "⚠️"
-        }
+        def get_icon(role):
+            icon_map = {
+                "You": self.icon_user,
+                "OpenToad": self.icon_opentoad,
+            }
+            icon_path = icon_map.get(role)
+            if icon_path and os.path.exists(icon_path):
+                return f'<img src="{icon_path}" width="16" height="16" style="vertical-align: middle;">'
+            emoji_map = {
+                "You": "👤",
+                "OpenToad": "🐸",
+                "System": "⚙️",
+                "Error": "⚠️"
+            }
+            return emoji_map.get(role, "💬")
         
         color = colors.get(role, "#d4d4d4")
-        icon = icons.get(role, "💬")
+        icon = get_icon(role)
         
         if is_user:
             html = f'''
