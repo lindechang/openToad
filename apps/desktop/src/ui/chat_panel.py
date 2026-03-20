@@ -8,15 +8,6 @@ from datetime import datetime
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))
 
 
-class ChatPanel(QWidget):
-    def _load_icons(self):
-        icons_dir = os.path.join(PROJECT_ROOT, 'icons')
-        self.icon_user = os.path.join(icons_dir, 'opentoad-logo-60.png')
-        self.icon_opentoad = os.path.join(icons_dir, 'opentoad-logo-60.png')
-        self.icon_system = ""
-        self.icon_error = ""
-
-
 class ChatWorker(QThread):
     finished = Signal(str)
     error = Signal(str)
@@ -41,6 +32,13 @@ class ChatWorker(QThread):
 
 
 class ChatPanel(QWidget):
+    def _load_icons(self):
+        icons_dir = os.path.join(PROJECT_ROOT, 'icons')
+        self.icon_user = os.path.join(icons_dir, 'opentoad-logo-60.png')
+        self.icon_opentoad = os.path.join(icons_dir, 'opentoad-logo-60.png')
+        self.icon_system = ""
+        self.icon_error = ""
+    
     def __init__(self):
         super().__init__()
         self.setStyleSheet("""
