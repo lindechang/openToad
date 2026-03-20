@@ -3,6 +3,7 @@ import re
 from typing import Optional, Callable
 from ..providers import LLMProvider, Message, ChatOptions
 from ..tools import global_tools
+from ..memory import MemoryCore
 from .types import AgentConfig, AgentState, ToolCall
 from .prompt import build_system_prompt
 
@@ -11,6 +12,7 @@ class Agent:
     def __init__(self, provider: LLMProvider, config: AgentConfig):
         self.provider = provider
         self.config = config
+        self.memory = MemoryCore()
     
     async def run(self, user_input: str) -> str:
         return await self._run_with_prompt(user_input)
@@ -25,7 +27,8 @@ class Agent:
         if profile.name:
             profile_context = profile.to_prompt_context()
         
-        system_prompt = build_system_prompt(profile_context)
+        memory_context = self.memory.to_context_string()
+        system_prompt = build_system_prompt(profile_context, memory_context)
         
         if not user_input:
             user_input = "你好，请介绍一下自己"

@@ -1,4 +1,4 @@
-def build_system_prompt(profile_context: str = "") -> str:
+def build_system_prompt(profile_context: str = "", memory_context: str = "") -> str:
     from ..profile import load_profile
     
     profile = load_profile()
@@ -59,6 +59,11 @@ def build_system_prompt(profile_context: str = "") -> str:
 - 简洁但有温度"""
 
     if profile_context:
-        return f"{intro_prompt}\n\n{base_prompt}\n\n{profile_context}"
+        prompt = f"{intro_prompt}\n\n{base_prompt}\n\n{profile_context}"
+    else:
+        prompt = f"{intro_prompt}\n\n{base_prompt}"
     
-    return f"{intro_prompt}\n\n{base_prompt}"
+    if memory_context:
+        prompt += f"\n\n## Your Memory Context\n{memory_context}"
+    
+    return prompt
