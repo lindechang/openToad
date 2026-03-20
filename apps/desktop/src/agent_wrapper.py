@@ -9,6 +9,7 @@ from src.providers import create_provider
 from src.agent import Agent, AgentConfig
 from src.tools import register_default_tools, global_tools
 from src.providers.types import ChatOptions, Message
+from src.memory import MemoryCore
 import asyncio
 
 class AgentWrapper:
@@ -18,6 +19,7 @@ class AgentWrapper:
         self.stream_enabled = stream
         self.provider = create_provider(provider, api_key)
         self.agent = Agent(self.provider, AgentConfig(model=model, stream=stream))
+        self.memory = MemoryCore()
     
     async def chat(self, message: str) -> str:
         return await self.agent.run(message)
