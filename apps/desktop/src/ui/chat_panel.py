@@ -34,8 +34,8 @@ class ChatWorker(QThread):
 class ChatPanel(QWidget):
     def _load_icons(self):
         icons_dir = os.path.join(PROJECT_ROOT, 'icons')
-        self.icon_user = os.path.join(icons_dir, 'opentoad-logo-60.png')
-        self.icon_opentoad = os.path.join(icons_dir, 'opentoad-logo-60.png')
+        self.icon_user = os.path.join(icons_dir, 'opentoad-logo-120.png')
+        self.icon_opentoad = os.path.join(icons_dir, 'opentoad-logo-120.png')
         self.icon_system = ""
         self.icon_error = ""
     
