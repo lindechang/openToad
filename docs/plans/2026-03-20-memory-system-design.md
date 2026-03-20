@@ -5,6 +5,168 @@
 
 ---
 
+## 0. 架构图谱
+
+### 0.1 整体架构图
+
+```mermaid
+flowchart TB
+    subgraph OpenToad["OpenToad 智能体"]
+        subgraph Identity["身份体系"]
+            BI[被赋予身份]
+            SI[自我探索]
+            P[核心原则]
+        end
+        
+        subgraph Memory["记忆系统"]
+            LM[长期记忆]
+            SM[短期记忆]
+            AM[封装记忆体]
+            
+            LM -->|身份记忆| I[身份]
+            LM -->|偏好记忆| PF[偏好]
+            LM -->|知识记忆| K[知识]
+            
+            SM -->|当前上下文| CT[上下文]
+            SM -->|最近变化| RC[近期变化]
+            SM -->|临时任务| TT[临时任务]
+            
+            AM -.->|索引| PA[项目档案]
+            AM -.->|索引| DA[对话档案]
+        end
+        
+        subgraph Mechanism["遗忘/升级机制"]
+            OM[主人标记]
+            AI[AI评估]
+            FR[频率触发]
+        end
+    end
+    
+    Owner[主人] -->|赋予| BI
+    Owner -->|对话| Memory
+    Owner -->|标记| OM
+    
+    CT -.->|项目完成| AM
+    RC -.->|满足条件| LM
+    AM -.->|按需调用| SM
+```
+
+### 0.2 记忆生命周期流程图
+
+```mermaid
+flowchart LR
+    subgraph 记忆生命周期
+        A[新记忆产生] --> B{判断类型}
+        B -->|身份/偏好| LT[长期记忆]
+        B -->|上下文/临时| ST[短期记忆]
+        
+        ST --> C{遗忘检查}
+        C -->|超时未引用| F[遗忘]
+        C -->|被引用| UC[访问计数+1]
+        UC --> D{升级检查}
+        
+        D -->|主人标记| LT
+        D -->|AI评估重要| LT
+        D -->|频率达标| LT
+        
+        LT --> E[稳定存储]
+        ST --> E
+        
+        E --> F
+    end
+```
+
+### 0.3 身份形成流程图
+
+```mermaid
+flowchart TB
+    subgraph 身份形成
+        Start[OpenToad 诞生] --> Q1{检查身份}
+        Q1 -->|无身份| Init[首次初始化]
+        Init --> Ask[询问主人名字]
+        Ask --> Give[主人赋予]
+        Give --> BI[被赋予身份<br/>名字/角色/主人/原则]
+        
+        Q1 -->|有身份| Working[日常工作中...]
+        Working -->|观察| Learn[渐进发现]
+        Learn --> ST[自我探索性格]
+        ST --> TD[真实性格倾向]
+        
+        Working -->|尝试| Try[学习能力]
+        Try -->|掌握| Ability[能力边界]
+        
+        BI --> Core[核心自我]
+        TD --> Core
+        Ability --> Core
+    end
+```
+
+### 0.4 封装记忆体流程图
+
+```mermaid
+flowchart TB
+    subgraph 项目/对话记忆管理
+        Start[开始项目/对话] --> Create[创建子记忆体]
+        Create --> Capture[持续记录细节]
+        
+        Capture --> Track{跟踪状态}
+        Track -->|进行中| Capture
+        
+        Track -->|完成| Decision{是否重要?}
+        Decision -->|是| Compress[压缩细节]
+        Decision -->|否| Discard[直接遗忘]
+        
+        Compress --> Archive[打包封装]
+        Archive --> Index[存入主记忆体索引]
+        Index --> Reference[只保留摘要引用]
+        
+        Later[后续需要] --> Retrieve[调用封装记忆]
+        Reference --> Retrieve
+    end
+```
+
+### 0.5 存储架构图
+
+```mermaid
+flowchart TB
+    subgraph 存储层
+        subgraph 应用层
+            Core[MemoryCore]
+            CLI[CLI命令]
+            Agent[Agent集成]
+        end
+        
+        subgraph 抽象层
+            Storage[MemoryStorage<br/>统一接口]
+        end
+        
+        subgraph 实现层
+            SQLite[(SQLite<br/>结构化数据)]
+            JSON[(JSON<br/>配置/索引)]
+            MD[Markdown<br/>可读记忆]
+        end
+        
+        Core --> Storage
+        CLI --> Storage
+        Agent --> Storage
+        
+        Storage --> SQLite
+        Storage --> JSON
+        Storage --> MD
+    end
+    
+    subgraph 存储位置
+        Home["~/.opentoad/"]
+        Home --> Memory["memory/"]
+        Home --> Config["memory.json"]
+        Memory --> DB["memory.db"]
+        Memory --> Mem["memories/"]
+        Memory --> Arc["archives/"]
+    end
+```
+
+---
+
 ## 1. 设计目标
 
 为 OpenToad 构建一个类似人脑的记忆系统，包含身份认知、长期记忆、短期记忆、可封装的子记忆体，以及智能的遗忘/升级机制。
