@@ -71,6 +71,44 @@ OpenToad 不只是一个 AI 助手，而是**主人的记忆体分身**——从
 - Token 经济：实例在线、任务执行赚取 Token
 - 广告联盟、订阅系统、API 变现
 
+### 手机直连 (Gateway)
+
+- **WebSocket Gateway** - 手机 App 可直接与 OpenToad 终端通讯
+- 无需经过远程 API 服务器
+- InstanceID 认证，简单安全
+- 支持流式响应
+
+## 🔗 手机连接
+
+OpenToad 支持手机 App 直接连接，实现真正的一对一私人 AI 助手。
+
+### 连接方式
+
+```
+ws://<电脑IP>:18989/ws
+```
+
+### 认证消息
+
+```json
+{"type": "auth", "payload": {"instance_id": "你的instance_id"}}
+```
+
+### 发送消息
+
+```json
+{"type": "message", "payload": {"content": "你好", "stream": true}}
+```
+
+### 启用 Gateway
+
+桌面应用：设置 → 📱 手机连接 → 勾选「启用 Gateway 服务」
+
+或使用独立启动脚本：
+```bash
+python scripts/start_gateway.py --api-key your-key --model gpt-4o-mini
+```
+
 ## 🚀 快速开始
 
 ### 环境要求
@@ -165,10 +203,18 @@ opentoad/
 │   │   ├── openai.py     # GPT
 │   │   ├── deepseek.py   # DeepSeek
 │   │   └── ollama.py     # 自部署
-│   ├── client/        # 实例通讯客户端
+│   ├── client/        # 实例通讯客户端 (HTTP)
+│   ├── gateway/        # WebSocket Gateway 服务 ⭐
+│   │   ├── server.py     # Gateway 服务端
+│   │   ├── ai_handler.py # AI 消息处理
+│   │   ├── protocol.py    # 消息协议
+│   │   └── config.py      # 配置
 │   └── profile.py     # 用户画像
 ├── apps/              # 应用
 │   └── desktop/       # 桌面应用 (PySide6)
+├── scripts/           # 脚本
+│   ├── start_gateway.py      # Gateway 启动脚本
+│   └── test_gateway_client.py # 测试客户端
 ├── tests/             # 测试
 └── docs/              # 文档
     └── plans/         # 设计文档

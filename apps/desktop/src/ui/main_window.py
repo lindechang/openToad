@@ -15,6 +15,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.client import InstanceService, ClientConfig
+from src.gateway import GatewayServer, GatewayConfig, AIHandler
 
 
 class MainWindow(QMainWindow):
@@ -56,6 +57,9 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
         
         self.settings = self._load_settings()
+        self._sidebar_collapsed = False
+        self._sidebar_width_expanded = 180
+        self._sidebar_width_collapsed = 65
         
         self._create_sidebar(main_layout)
         self._create_content(main_layout)
@@ -64,6 +68,7 @@ class MainWindow(QMainWindow):
         
         self._init_agent()
         self._init_instance_service()
+        self._init_gateway()
     
     def _init_instance_service(self):
         try:
@@ -86,6 +91,43 @@ class MainWindow(QMainWindow):
         except Exception as e:
             import traceback
             print(f"Failed to start instance service: {e}")
+            traceback.print_exc()
+    
+    def _init_gateway(self):
+        self.gateway_server = None
+        self.gateway_ai_handler = None
+        
+        gateway_enabled = self.settings.get("gateway_enabled", False)
+        if not gateway_enabled:
+            return
+        
+        try:
+            provider = self.settings.get("provider", "openai")
+            api_key = self.settings.get("api_key", "")
+            model = self.settings.get("model", "gpt-4o-mini")
+            port = self.settings.get("gateway_port", 18989)
+            stream = self.settings.get("gateway_stream", True)
+            
+            self.gateway_ai_handler = AIHandler(
+                provider_type=provider,
+                api_key=api_key,
+                model=model,
+                stream=stream
+            )
+            
+            async def handle_message(instance_id: str, content: str):
+                async for chunk in self.gateway_ai_handler.handle_message(instance_id, content):
+                    yield chunk
+            
+            config = GatewayConfig(host="0.0.0.0", port=port)
+            self.gateway_server = GatewayServer(config=config, on_message=handle_message)
+            self.gateway_server.start(background=True)
+            
+            print(f"Gateway started on port {port}")
+            self.status_bar.showMessage(f"Gateway 已启动: ws://0.0.0.0:{port}/ws", 5000)
+        except Exception as e:
+            import traceback
+            print(f"Failed to start gateway: {e}")
             traceback.print_exc()
     
     def _apply_styles(self):
@@ -192,40 +234,91 @@ class MainWindow(QMainWindow):
             QListWidget::item:hover {
                 background-color: #3c3c3c;
             }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 0px;
+            }
+            QScrollBar:horizontal {
+                background: transparent;
+                height: 0px;
+            }
         """)
     
     def _create_sidebar(self, parent_layout):
-        sidebar = QWidget()
-        sidebar.setFixedWidth(180)
-        sidebar.setStyleSheet("background-color: #252526;")
+        from PySide6.QtCore import QPropertyAnimation, QEasingCurve, Property
         
-        sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(10, 20, 10, 10)
+        self.sidebar = QWidget()
+        self.sidebar.setFixedWidth(self._sidebar_width_expanded)
+        self.sidebar.setStyleSheet("background-color: #252526;")
+        
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setContentsMargins(5, 10, 5, 10)
         sidebar_layout.setSpacing(5)
         
-        title = QLabel("OpenToad")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #4ec9b0; padding: 10px;")
-        title.setAlignment(Qt.AlignCenter)
-        sidebar_layout.addWidget(title)
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.toggle_btn = QPushButton("☰")
+        self.toggle_btn.setFixedSize(40, 40)
+        self.toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                font-size: 20px;
+                color: #d4d4d4;
+            }
+            QPushButton:hover {
+                background-color: #3c3c3c;
+                border-radius: 8px;
+            }
+        """)
+        self.toggle_btn.clicked.connect(self._toggle_sidebar)
+        
+        self.sidebar_title = QLabel("OpenToad")
+        self.sidebar_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #4ec9b0;")
+        self.sidebar_title.setAlignment(Qt.AlignCenter)
+        
+        header_layout.addWidget(self.toggle_btn)
+        header_layout.addWidget(self.sidebar_title)
+        sidebar_layout.addWidget(header_widget)
         
         self.provider_label = QLabel("未连接")
-        self.provider_label.setStyleSheet("color: #888; font-size: 11px; padding-bottom: 20px;")
+        self.provider_label.setStyleSheet("color: #888; font-size: 10px; padding: 5px;")
         self.provider_label.setAlignment(Qt.AlignCenter)
+        self.provider_label.setWordWrap(True)
         sidebar_layout.addWidget(self.provider_label)
         
         self.nav_list = QListWidget()
-        self.nav_list.setStyleSheet("QListWidget { background-color: transparent; border: none; }")
+        self.nav_list.setStyleSheet("""
+            QListWidget {
+                background-color: transparent;
+                border: none;
+            }
+            QListWidget::item {
+                padding: 12px 10px;
+                border-radius: 8px;
+                margin: 2px 0;
+            }
+            QListWidget::item:selected {
+                background-color: #0e639c;
+                color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #3c3c3c;
+            }
+        """)
         
-        nav_items = [
+        self.nav_items_data = [
             ("💬", "对话"),
             ("⚙️", "设置"),
             ("ℹ️", "关于"),
             ("❓", "帮助"),
         ]
         
-        for icon, text in nav_items:
+        for icon, text in self.nav_items_data:
             item = QListWidgetItem(f"{icon}  {text}")
-            item.setSizeHint(QSize(0, 48))
+            item.setSizeHint(QSize(0, 44))
             self.nav_list.addItem(item)
         
         self.nav_list.currentRowChanged.connect(self._on_nav_changed)
@@ -234,15 +327,16 @@ class MainWindow(QMainWindow):
         
         sidebar_layout.addStretch()
         
-        clear_btn = QPushButton("🗑️ 清空对话")
-        clear_btn.setCursor(Qt.PointingHandCursor)
-        clear_btn.clicked.connect(self._clear_chat)
-        sidebar_layout.addWidget(clear_btn)
+        self.clear_btn = QPushButton("🗑️ 清空")
+        self.clear_btn.setCursor(Qt.PointingHandCursor)
+        self.clear_btn.clicked.connect(self._clear_chat)
+        sidebar_layout.addWidget(self.clear_btn)
         
-        parent_layout.addWidget(sidebar)
+        parent_layout.addWidget(self.sidebar)
     
     def _create_content(self, parent_layout):
         self.content_stack = QStackedWidget()
+        parent_layout.addWidget(self.content_stack)
         
         self.chat_panel = ChatPanel()
         self.content_stack.addWidget(self.chat_panel)
@@ -347,7 +441,63 @@ class MainWindow(QMainWindow):
         self._save_settings()
         self._save_profile(new_settings.get("profile", {}))
         self._init_agent()
+        self._restart_gateway()
         self.status_bar.showMessage("设置已保存", 3000)
+    
+    def _restart_gateway(self):
+        if hasattr(self, 'gateway_server') and self.gateway_server:
+            try:
+                self.gateway_server.stop()
+                print("Gateway stopped for restart")
+            except Exception as e:
+                print(f"Error stopping gateway: {e}")
+            self.gateway_server = None
+            self.gateway_ai_handler = None
+        
+        gateway_enabled = self.settings.get("gateway_enabled", False)
+        if gateway_enabled:
+            self._init_gateway()
+    
+    def _toggle_sidebar(self):
+        from PySide6.QtCore import QPropertyAnimation, QEasingCurve
+        
+        self._sidebar_collapsed = not self._sidebar_collapsed
+        
+        if self._sidebar_collapsed:
+            target_width = self._sidebar_width_collapsed
+            collapsed = True
+        else:
+            target_width = self._sidebar_width_expanded
+            collapsed = False
+        
+        self.animation = QPropertyAnimation(self.sidebar, b"minimumWidth")
+        self.animation.setDuration(200)
+        self.animation.setStartValue(self.sidebar.width())
+        self.animation.setEndValue(target_width)
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self.animation.valueChanged.connect(lambda v: self.sidebar.setFixedWidth(v))
+        self.animation.finished.connect(lambda: self._set_sidebar_collapsed(collapsed))
+        self.animation.start()
+    
+    def _set_sidebar_collapsed(self, collapsed: bool):
+        if collapsed:
+            self.sidebar_title.hide()
+            self.provider_label.hide()
+            self.clear_btn.hide()
+        else:
+            self.sidebar_title.show()
+            self.provider_label.show()
+            self.clear_btn.show()
+        
+        for i, (icon, text) in enumerate(self.nav_items_data):
+            item = self.nav_list.item(i)
+            if item:
+                if collapsed:
+                    item.setText(icon)
+                    item.setSizeHint(QSize(50, 44))
+                else:
+                    item.setText(f"{icon}  {text}")
+                    item.setSizeHint(QSize(160, 44))
     
     def _clear_chat(self):
         self.chat_panel.clear()
@@ -431,4 +581,12 @@ class MainWindow(QMainWindow):
                 print("Instance service stopped")
             except Exception as e:
                 print(f"Error stopping instance service: {e}")
+        
+        if hasattr(self, 'gateway_server') and self.gateway_server:
+            try:
+                self.gateway_server.stop()
+                print("Gateway stopped")
+            except Exception as e:
+                print(f"Error stopping gateway: {e}")
+        
         event.accept()

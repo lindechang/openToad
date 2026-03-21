@@ -265,6 +265,7 @@ class SettingsDialog(QDialog):
         tabs = QTabWidget()
         tabs.addTab(self._create_provider_tab(), "🤖 LLM设置")
         tabs.addTab(self._create_profile_tab(), "👤 用户画像")
+        tabs.addTab(self._create_gateway_tab(), "📱 手机连接")
         
         layout.addWidget(tabs)
         
@@ -430,6 +431,71 @@ class SettingsDialog(QDialog):
         scroll.setWidget(widget)
         return scroll
     
+    def _create_gateway_tab(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(15)
+        
+        self._create_gateway_info_card(layout)
+        self._create_gateway_config_card(layout)
+        
+        layout.addStretch()
+        scroll.setWidget(widget)
+        return scroll
+    
+    def _create_gateway_info_card(self, parent_layout):
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #2d3d4a;
+                border: 1px solid #4ec9b0;
+                border-radius: 8px;
+                padding: 15px;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        
+        title_label = QLabel("📱 手机 App 连接")
+        title_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #4ec9b0;")
+        
+        desc_label = QLabel(
+            "开启后，手机客户端可以通过 WebSocket 直接与此 OpenToad 终端通讯，"
+            "无需通过远程 API 服务器。"
+        )
+        desc_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        desc_label.setWordWrap(True)
+        
+        card_layout.addWidget(title_label)
+        card_layout.addWidget(desc_label)
+        
+        parent_layout.addWidget(card)
+    
+    def _create_gateway_config_card(self, parent_layout):
+        group = QGroupBox("Gateway 配置")
+        config_layout = QFormLayout()
+        config_layout.setSpacing(12)
+        
+        self.gateway_enabled_checkbox = QCheckBox("启用 Gateway 服务")
+        self.gateway_enabled_checkbox.setChecked(False)
+        
+        self.gateway_port_input = QLineEdit()
+        self.gateway_port_input.setPlaceholderText("18989")
+        self.gateway_port_input.setMaxLength(5)
+        
+        self.gateway_stream_checkbox = QCheckBox("启用流式输出")
+        self.gateway_stream_checkbox.setChecked(True)
+        
+        config_layout.addRow("", self.gateway_enabled_checkbox)
+        config_layout.addRow("端口:", self.gateway_port_input)
+        config_layout.addRow("", self.gateway_stream_checkbox)
+        
+        group.setLayout(config_layout)
+        parent_layout.addWidget(group)
+    
     def _create_basic_info_card(self, parent_layout):
         group = QGroupBox("基本信息")
         basic_layout = QFormLayout()
@@ -582,6 +648,9 @@ class SettingsDialog(QDialog):
             "model": self.model_input.text(),
             "stream": self.stream_checkbox.isChecked(),
             "max_tokens": self.max_tokens_spin.value(),
+            "gateway_enabled": self.gateway_enabled_checkbox.isChecked(),
+            "gateway_port": int(self.gateway_port_input.text() or "18989"),
+            "gateway_stream": self.gateway_stream_checkbox.isChecked(),
             "profile": {
                 "name": self.name_input.text(),
                 "nickname": self.nickname_input.text(),
@@ -604,6 +673,10 @@ class SettingsDialog(QDialog):
         self.model_input.setText(settings.get("model", ""))
         self.stream_checkbox.setChecked(settings.get("stream", True))
         self.max_tokens_spin.setValue(settings.get("max_tokens", 1024))
+        
+        self.gateway_enabled_checkbox.setChecked(settings.get("gateway_enabled", False))
+        self.gateway_port_input.setText(str(settings.get("gateway_port", 18989)))
+        self.gateway_stream_checkbox.setChecked(settings.get("gateway_stream", True))
         
         self._update_current_config_display()
         

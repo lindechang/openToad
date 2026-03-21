@@ -35,7 +35,18 @@
 | 实例ID持久化 | 保存 instance_id 避免重复注册 | ✅ |
 | 执行结果上报 | 上报指令执行结果到云端 | ✅ |
 
-### 4. 系统集成
+### 4. 手机直连 (WebSocket Gateway)
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| WebSocket 服务 | 手机 App 直接连接终端 | ✅ |
+| InstanceID 认证 | 简单安全的身份验证 | ✅ |
+| 消息协议 | JSON 格式消息交换 | ✅ |
+| 流式响应 | 实时 AI 回复输出 | ✅ |
+| 设置界面 | 桌面应用配置 Gateway | ✅ |
+| 独立启动 | 可脱离桌面应用独立运行 | ✅ |
+
+### 5. 系统集成
 
 | 功能 | 说明 | 状态 |
 |------|------|------|
@@ -44,7 +55,7 @@
 | 窗口控制 | 最小化/最大化 | ⏳ |
 | 自动启动 | 开机自启动 | ⏳ |
 
-### 5. UI 交互
+### 6. UI 交互
 
 | 功能 | 说明 | 状态 |
 |------|------|------|
@@ -244,6 +255,7 @@
 | CLI | Typer + Rich |
 | 桌面 GUI | PySide6 (Qt) |
 | HTTP 客户端 | requests / aiohttp |
+| WebSocket | FastAPI + websockets + uvicorn |
 | LLM SDK | anthropic, openai |
 | 存储 | SQLite, JSON |
 | 数据库 | PostgreSQL + Redis (服务端) |
