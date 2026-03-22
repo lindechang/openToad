@@ -26,7 +26,7 @@
   </a>
 </p>
 
----
+***
 
 ## ⭐ 简介
 
@@ -59,11 +59,11 @@ OpenToad 不只是一个 AI 助手，而是**主人的记忆体分身**——从
 
 ### 多模型支持
 
-| 类型 | 模型 |
-|------|------|
-| 海外 | Claude, GPT, Gemini |
-| 国内 | 文心一言, 通义千问, 混元, ChatGLM, Kimi, DeepSeek |
-| 自部署 | Ollama, LocalAI, LM Studio, vLLM |
+| 类型  | 模型                                      |
+| --- | --------------------------------------- |
+| 海外  | Claude, GPT, Gemini                     |
+| 国内  | 文心一言, 通义千问, 混元, ChatGLM, Kimi, DeepSeek |
+| 自部署 | Ollama, LocalAI, LM Studio, vLLM        |
 
 ### 可扩展盈利
 
@@ -105,6 +105,7 @@ ws://<电脑IP>:18989/ws
 桌面应用：设置 → 📱 手机连接 → 勾选「启用 Gateway 服务」
 
 或使用独立启动脚本：
+
 ```bash
 python scripts/start_gateway.py --api-key your-key --model gpt-4o-mini
 ```
@@ -113,7 +114,7 @@ python scripts/start_gateway.py --api-key your-key --model gpt-4o-mini
 
 ### 环境要求
 
-- Python 3.9+ (已完全兼容)
+- Python 3.10+ (已完全兼容)
 - pip 20.0+
 
 ### 安装
@@ -145,6 +146,7 @@ cp .env.example .env
 ### 运行
 
 #### macOS / Linux
+
 ```bash
 # 首次运行，初始化身份和记忆
 python -m src.memory.cli init
@@ -160,6 +162,7 @@ python3 apps/desktop/src/main.py
 ```
 
 #### Windows
+
 ```batch
 # 首次运行，初始化身份和记忆
 python -m src.memory.cli init
@@ -241,7 +244,7 @@ python -m black src/
 
 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件。
 
----
+***
 
 <p align="center">
   用 ❤️ 制作 · OpenToad Team
