@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+from unittest.mock import MagicMock, patch
 from src.memory.core import MemoryCore
 from src.memory.storage import MemoryStorage
 from src.memory.types import MemoryCategory
@@ -54,3 +55,56 @@ def test_to_context_string(core):
     context = core.to_context_string()
     assert "Toad" in context
     assert "Helper" in context
+
+
+class TestAuthIntegration:
+    def test_no_auth_service_non_encrypted_storage(self):
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+            db_path = f.name
+        storage = MemoryStorage(db_path)
+        core = MemoryCore(storage, auth_service=None)
+        item = core.add_memory("Test")
+        assert item.content == "Test"
+        os.unlink(db_path)
+
+    def test_auth_service_not_logged_in_encrypted_storage_raises(self):
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+            db_path = f.name
+        mock_crypto = MagicMock()
+        storage = MemoryStorage(db_path, crypto=mock_crypto)
+        mock_auth = MagicMock()
+        mock_auth.is_logged_in = False
+        core = MemoryCore(storage, auth_service=mock_auth)
+        
+        with pytest.raises(PermissionError, match="Authentication required"):
+            core.add_memory("Test")
+        
+        os.unlink(db_path)
+
+    def test_auth_service_logged_in_encrypted_storage_works(self):
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+            db_path = f.name
+        mock_crypto = MagicMock()
+        storage = MemoryStorage(db_path, crypto=mock_crypto)
+        mock_auth = MagicMock()
+        mock_auth.is_logged_in = True
+        core = MemoryCore(storage, auth_service=mock_auth)
+        
+        item = core.add_memory("Test")
+        assert item.content == "Test"
+        
+        os.unlink(db_path)
+
+    def test_get_identity_encrypted_not_logged_in_raises(self):
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+            db_path = f.name
+        mock_crypto = MagicMock()
+        storage = MemoryStorage(db_path, crypto=mock_crypto)
+        mock_auth = MagicMock()
+        mock_auth.is_logged_in = False
+        core = MemoryCore(storage, auth_service=mock_auth)
+        
+        with pytest.raises(PermissionError, match="Authentication required"):
+            _ = core.identity
+        
+        os.unlink(db_path)
