@@ -6,6 +6,14 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtGui import QIcon, QFont
+import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.auth.service import AuthService
 
 PROVIDER_DISPLAY_NAMES = {
     "anthropic": "Claude (Anthropic)",
@@ -34,16 +42,74 @@ PROVIDERS = [
 ]
 
 PROVIDER_MODELS = {
-    "anthropic": "claude-3-5-sonnet-20241022",
-    "openai": "gpt-4o",
-    "deepseek": "deepseek-chat",
-    "qianwen": "qwen-turbo",
-    "ernie": "ernie-bot",
-    "hunyuan": "hunyuan-latest",
-    "zhipu": "glm-4",
-    "kimi": "moonshot-v1-8k",
-    "gemini": "gemini-1.5-flash",
-    "ollama": "llama2",
+    "anthropic": [
+        ("claude-sonnet-4-20260220", "Claude Sonnet 4.6 (最新)"),
+        ("claude-opus-4-20260220", "Claude Opus 4.6 (最强)"),
+        ("claude-3-7-sonnet-20250219", "Claude 3.7 Sonnet"),
+        ("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet"),
+        ("claude-3-haiku-20240307", "Claude 3 Haiku"),
+    ],
+    "openai": [
+        ("gpt-5.4", "GPT-5.4 (最新)"),
+        ("gpt-5.4-pro", "GPT-5.4 Pro (最强)"),
+        ("gpt-5.4-mini", "GPT-5.4 Mini"),
+        ("gpt-5.3", "GPT-5.3"),
+        ("gpt-5", "GPT-5"),
+        ("gpt-4o", "GPT-4o"),
+        ("gpt-4-turbo", "GPT-4 Turbo"),
+        ("gpt-4", "GPT-4"),
+        ("gpt-3.5-turbo", "GPT-3.5 Turbo"),
+    ],
+    "deepseek": [
+        ("deepseek-chat", "DeepSeek V3.2 (最新)"),
+        ("deepseek-reasoner", "DeepSeek R2 (推理)"),
+        ("deepseek-coder", "DeepSeek Coder V3"),
+    ],
+    "qianwen": [
+        ("qwen3.5-plus", "Qwen 3.5 Plus (最新)"),
+        ("qwen3-max", "Qwen 3 Max (最强)"),
+        ("qwen-plus", "Qwen Plus"),
+        ("qwen-turbo", "Qwen Turbo"),
+        ("qwen3-omni", "Qwen 3 Omni (多模态)"),
+    ],
+    "ernie": [
+        ("ernie-5.0", "文心一言 5.0 (最新)"),
+        ("ernie-4.5-300B-A47B", "ERNIE 4.5 300B"),
+        ("ernie-4.5-VL-424B-A47B", "ERNIE 4.5 VL (多模态)"),
+        ("ernie-bot-turbo", "ERNIE Turbo"),
+    ],
+    "hunyuan": [
+        ("hunyuan-t1-20250711", "混元 T1 (最新)"),
+        ("hunyuan", "混元标准版"),
+        ("hunyuan-pro", "混元 Pro"),
+    ],
+    "zhipu": [
+        ("glm-5", "GLM-5 (最新)"),
+        ("glm-4.7", "GLM-4.7"),
+        ("glm-4.7-flash", "GLM-4.7 Flash (快速)"),
+        ("glm-4.6", "GLM-4.6"),
+        ("glm-4-flash", "GLM-4 Flash"),
+    ],
+    "kimi": [
+        ("kimi-k2.5", "Kimi K2.5 (最新多模态)"),
+        ("kimi-k2-turbo-preview", "Kimi K2 Turbo (快速)"),
+        ("kimi-k2-thinking", "Kimi K2 Thinking (推理)"),
+        ("moonshot-v1-128k", "Moonshot V1 128K"),
+        ("moonshot-v1-32k", "Moonshot V1 32K"),
+    ],
+    "gemini": [
+        ("gemini-3.1-pro", "Gemini 3.1 Pro (最新)"),
+        ("gemini-2.0-flash", "Gemini 2.0 Flash (1M上下文)"),
+        ("gemini-1.5-flash", "Gemini 1.5 Flash"),
+        ("gemini-1.5-pro", "Gemini 1.5 Pro"),
+    ],
+    "ollama": [
+        ("llama3.3", "Llama 3.3 (最新)"),
+        ("llama3.1", "Llama 3.1"),
+        ("qwen2.5", "Qwen 2.5"),
+        ("mistral", "Mistral"),
+        ("codellama", "Code Llama"),
+    ],
 }
 
 INTEREST_FIELDS = [
@@ -89,12 +155,43 @@ class TestConnectionWorker(QThread):
     
     def run(self):
         try:
-            from src.providers import create_provider
+            from src.providers import create_provider, ChatOptions, Message
             llm = create_provider(self.provider, self.api_key)
-            response = llm.chat("Hello")
+            options = ChatOptions(
+                model=self.model,
+                messages=[Message(role="user", content="Hello")]
+            )
+            response = llm.chat(options)
             self.finished.emit(True, "", "")
         except Exception as e:
             self.finished.emit(False, str(e), "")
+
+
+class AuthWorker(QThread):
+    finished = Signal(object)
+    error = Signal(str)
+    
+    def __init__(self, auth_service, action, email=None, password=None, name=None):
+        super().__init__()
+        self.auth_service = auth_service
+        self.action = action
+        self.email = email
+        self.password = password
+        self.name = name
+    
+    def run(self):
+        try:
+            if self.action == 'login':
+                result = self.auth_service.login(self.email, self.password)
+                self.finished.emit(result)
+            elif self.action == 'register':
+                result = self.auth_service.register(self.email, self.password, self.name)
+                self.finished.emit(result)
+            elif self.action == 'logout':
+                self.auth_service.logout()
+                self.finished.emit(True)
+        except Exception as e:
+            self.error.emit(str(e))
 
 
 class SettingsDialog(QDialog):
@@ -263,9 +360,9 @@ class SettingsDialog(QDialog):
         self._create_header(layout)
         
         tabs = QTabWidget()
-        tabs.addTab(self._create_provider_tab(), "🤖 LLM设置")
         tabs.addTab(self._create_profile_tab(), "👤 用户画像")
         tabs.addTab(self._create_gateway_tab(), "📱 手机连接")
+        tabs.addTab(self._create_options_tab(), "⚙️ 选项")
         
         layout.addWidget(tabs)
         
@@ -292,7 +389,7 @@ class SettingsDialog(QDialog):
         
         parent_layout.addWidget(header_widget)
     
-    def _create_provider_tab(self):
+    def _create_options_tab(self):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -301,102 +398,7 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(widget)
         layout.setSpacing(15)
         
-        self._create_current_config_card(layout)
-        self._create_provider_card(layout)
-        self._create_options_card(layout)
-        
-        layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
-    
-    def _create_current_config_card(self, parent_layout):
-        card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #2d4a3d;
-                border: 1px solid #4ec9b0;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
-        card_layout = QHBoxLayout(card)
-        
-        icon_label = QLabel("✓")
-        icon_label.setStyleSheet("font-size: 20px; color: #4ec9b0;")
-        
-        info_layout = QVBoxLayout()
-        info_layout.setSpacing(3)
-        
-        self.current_provider_label = QLabel("未设置")
-        self.current_provider_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff;")
-        
-        self.current_model_label = QLabel("")
-        self.current_model_label.setStyleSheet("font-size: 12px; color: #aaaaaa;")
-        
-        info_layout.addWidget(self.current_provider_label)
-        info_layout.addWidget(self.current_model_label)
-        
-        card_layout.addWidget(icon_label)
-        card_layout.addLayout(info_layout)
-        card_layout.addStretch()
-        
-        parent_layout.addWidget(card)
-    
-    def _create_provider_card(self, parent_layout):
-        group = QGroupBox("LLM 配置")
-        group_layout = QFormLayout()
-        group_layout.setSpacing(12)
-        group_layout.setLabelAlignment(Qt.AlignLeft)
-        
-        self.provider_combo = QComboBox()
-        for key, name in PROVIDERS:
-            self.provider_combo.addItem(name, key)
-        self.provider_combo.currentIndexChanged.connect(self._on_provider_changed)
-        
-        api_key_layout = QHBoxLayout()
-        self.api_key_input = QLineEdit()
-        self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.api_key_input.setPlaceholderText("输入 API Key")
-        
-        self.toggle_key_btn = QPushButton("👁")
-        self.toggle_key_btn.setFixedWidth(35)
-        self.toggle_key_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #555;
-                padding: 6px;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #666;
-            }
-        """)
-        self.toggle_key_btn.clicked.connect(self._toggle_api_key_visibility)
-        
-        api_key_layout.addWidget(self.api_key_input)
-        api_key_layout.addWidget(self.toggle_key_btn)
-        
-        self.model_input = QLineEdit()
-        self.model_input.setPlaceholderText("模型名称")
-        self.model_input.textChanged.connect(self._update_current_config_display)
-        
-        self.test_btn = QPushButton("测试连接")
-        self.test_btn.setObjectName("test_btn")
-        self.test_btn.clicked.connect(self._test_connection)
-        
-        test_layout = QHBoxLayout()
-        test_layout.addWidget(self.test_btn)
-        test_layout.addStretch()
-        
-        group_layout.addRow("Provider:", self.provider_combo)
-        group_layout.addRow("API Key:", api_key_layout)
-        group_layout.addRow("Model:", self.model_input)
-        group_layout.addRow("", test_layout)
-        
-        group.setLayout(group_layout)
-        parent_layout.addWidget(group)
-    
-    def _create_options_card(self, parent_layout):
-        group = QGroupBox("选项设置")
+        group = QGroupBox("对话选项")
         options_layout = QFormLayout()
         options_layout.setSpacing(12)
         
@@ -412,7 +414,11 @@ class SettingsDialog(QDialog):
         options_layout.addRow("最大Token:", self.max_tokens_spin)
         
         group.setLayout(options_layout)
-        parent_layout.addWidget(group)
+        layout.addWidget(group)
+        
+        layout.addStretch()
+        scroll.setWidget(widget)
+        return scroll
     
     def _create_profile_tab(self):
         scroll = QScrollArea()
@@ -430,6 +436,251 @@ class SettingsDialog(QDialog):
         layout.addStretch()
         scroll.setWidget(widget)
         return scroll
+    
+    def _create_account_tab(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(15)
+        
+        self._create_auth_status_card(layout)
+        self._create_login_card(layout)
+        self._create_register_card(layout)
+        
+        layout.addStretch()
+        scroll.setWidget(widget)
+        return scroll
+    
+    def _create_auth_status_card(self, parent_layout):
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #2d3d4a;
+                border: 1px solid #4ec9b0;
+                border-radius: 8px;
+                padding: 15px;
+            }
+        """)
+        card_layout = QHBoxLayout(card)
+        
+        self.auth_status_icon = QLabel("🔒")
+        self.auth_status_icon.setStyleSheet("font-size: 24px;")
+        
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(3)
+        
+        self.auth_status_label = QLabel("未登录")
+        self.auth_status_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff;")
+        
+        self.auth_status_desc = QLabel("登录后可加密保护您的记忆数据")
+        self.auth_status_desc.setStyleSheet("font-size: 12px; color: #aaaaaa;")
+        
+        info_layout.addWidget(self.auth_status_label)
+        info_layout.addWidget(self.auth_status_desc)
+        
+        self.logout_btn = QPushButton("登出")
+        self.logout_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #8b3a3a;
+                color: white;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background-color: #a04545;
+            }
+        """)
+        self.logout_btn.clicked.connect(self._do_logout)
+        self.logout_btn.hide()
+        
+        card_layout.addWidget(self.auth_status_icon)
+        card_layout.addLayout(info_layout)
+        card_layout.addStretch()
+        card_layout.addWidget(self.logout_btn)
+        
+        parent_layout.addWidget(card)
+        
+        self._check_initial_auth_status()
+    
+    def _check_initial_auth_status(self):
+        auth_service = self._get_auth_service()
+        if auth_service.is_logged_in:
+            session = auth_service.session
+            self._update_auth_display(True, session.email)
+        else:
+            self._update_auth_display(False)
+    
+    def _create_login_card(self, parent_layout):
+        group = QGroupBox("登录")
+        form_layout = QFormLayout()
+        form_layout.setSpacing(12)
+        
+        self.login_email_input = QLineEdit()
+        self.login_email_input.setPlaceholderText("邮箱")
+        
+        self.login_password_input = QLineEdit()
+        self.login_password_input.setPlaceholderText("密码")
+        self.login_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        self.login_btn = QPushButton("登录")
+        self.login_btn.clicked.connect(self._do_login)
+        
+        self.login_status_label = QLabel("")
+        self.login_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        
+        form_layout.addRow("邮箱:", self.login_email_input)
+        form_layout.addRow("密码:", self.login_password_input)
+        form_layout.addRow("", self.login_btn)
+        form_layout.addRow("", self.login_status_label)
+        
+        group.setLayout(form_layout)
+        parent_layout.addWidget(group)
+    
+    def _create_register_card(self, parent_layout):
+        group = QGroupBox("注册新账号")
+        form_layout = QFormLayout()
+        form_layout.setSpacing(12)
+        
+        self.reg_name_input = QLineEdit()
+        self.reg_name_input.setPlaceholderText("昵称")
+        
+        self.reg_email_input = QLineEdit()
+        self.reg_email_input.setPlaceholderText("邮箱")
+        
+        self.reg_password_input = QLineEdit()
+        self.reg_password_input.setPlaceholderText("密码")
+        self.reg_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        self.reg_password2_input = QLineEdit()
+        self.reg_password2_input.setPlaceholderText("确认密码")
+        self.reg_password2_input.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        self.register_btn = QPushButton("注册")
+        self.register_btn.clicked.connect(self._do_register)
+        
+        self.register_status_label = QLabel("")
+        self.register_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        
+        form_layout.addRow("昵称:", self.reg_name_input)
+        form_layout.addRow("邮箱:", self.reg_email_input)
+        form_layout.addRow("密码:", self.reg_password_input)
+        form_layout.addRow("确认:", self.reg_password2_input)
+        form_layout.addRow("", self.register_btn)
+        form_layout.addRow("", self.register_status_label)
+        
+        group.setLayout(form_layout)
+        parent_layout.addWidget(group)
+    
+    def _get_auth_service(self):
+        server_url = self.parent().settings.get("server_url", "http://api.opentoad.cn") if hasattr(self.parent(), 'settings') else "http://api.opentoad.cn"
+        return AuthService(server_url)
+    
+    def _update_auth_display(self, logged_in=False, email=None):
+        if logged_in and email:
+            self.auth_status_icon.setText("🔓")
+            self.auth_status_label.setText(f"已登录: {email}")
+            self.auth_status_desc.setText("您的记忆数据已加密保护")
+            self.logout_btn.show()
+        else:
+            self.auth_status_icon.setText("🔒")
+            self.auth_status_label.setText("未登录")
+            self.auth_status_desc.setText("登录后可加密保护您的记忆数据")
+            self.logout_btn.hide()
+    
+    def _do_login(self):
+        email = self.login_email_input.text().strip()
+        password = self.login_password_input.text()
+        
+        if not email or not password:
+            self.login_status_label.setText("请输入邮箱和密码")
+            self.login_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+            return
+        
+        self.login_btn.setEnabled(False)
+        self.login_btn.setText("登录中...")
+        self.login_status_label.setText("正在登录...")
+        
+        auth_service = self._get_auth_service()
+        self.auth_worker = AuthWorker(auth_service, 'login', email, password)
+        self.auth_worker.finished.connect(self._on_login_success)
+        self.auth_worker.error.connect(self._on_login_error)
+        self.auth_worker.start()
+    
+    def _on_login_success(self, session):
+        self.login_btn.setEnabled(True)
+        self.login_btn.setText("登录")
+        self.login_status_label.setText(f"✓ 登录成功: {session.email}")
+        self.login_status_label.setStyleSheet("color: #4ec9b0; font-size: 12px;")
+        self._update_auth_display(True, session.email)
+        self.login_email_input.clear()
+        self.login_password_input.clear()
+        
+        if hasattr(self.parent(), '_update_auth_status'):
+            self.parent().session = session
+            self.parent()._update_auth_status()
+    
+    def _on_login_error(self, error_msg):
+        self.login_btn.setEnabled(True)
+        self.login_btn.setText("登录")
+        self.login_status_label.setText(f"✗ 登录失败: {error_msg}")
+        self.login_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+    
+    def _do_register(self):
+        name = self.reg_name_input.text().strip()
+        email = self.reg_email_input.text().strip()
+        password = self.reg_password_input.text()
+        password2 = self.reg_password2_input.text()
+        
+        if not name or not email or not password:
+            self.register_status_label.setText("请填写所有字段")
+            self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+            return
+        
+        if password != password2:
+            self.register_status_label.setText("两次密码不一致")
+            self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+            return
+        
+        self.register_btn.setEnabled(False)
+        self.register_btn.setText("注册中...")
+        self.register_status_label.setText("正在注册...")
+        
+        auth_service = self._get_auth_service()
+        self.auth_worker = AuthWorker(auth_service, 'register', email, password, name)
+        self.auth_worker.finished.connect(self._on_register_success)
+        self.auth_worker.error.connect(self._on_register_error)
+        self.auth_worker.start()
+    
+    def _on_register_success(self, result):
+        self.register_btn.setEnabled(True)
+        self.register_btn.setText("注册")
+        self.register_status_label.setText("✓ 注册成功！请登录")
+        self.register_status_label.setStyleSheet("color: #4ec9b0; font-size: 12px;")
+        
+        self.login_email_input.setText(self.reg_email_input.text())
+        self.reg_name_input.clear()
+        self.reg_email_input.clear()
+        self.reg_password_input.clear()
+        self.reg_password2_input.clear()
+    
+    def _on_register_error(self, error_msg):
+        self.register_btn.setEnabled(True)
+        self.register_btn.setText("注册")
+        self.register_status_label.setText(f"✗ 注册失败: {error_msg}")
+        self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+    
+    def _do_logout(self):
+        auth_service = self._get_auth_service()
+        auth_service.logout()
+        self._update_auth_display(False)
+        self.login_status_label.setText("")
+        self.register_status_label.setText("")
+        
+        if hasattr(self.parent(), '_update_auth_status'):
+            self.parent().session = None
+            self.parent()._update_auth_status()
     
     def _create_gateway_tab(self):
         scroll = QScrollArea()
@@ -569,63 +820,7 @@ class SettingsDialog(QDialog):
             self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
             self.toggle_key_btn.setText("👁")
     
-    def _on_provider_changed(self, index: int):
-        provider_key = self.provider_combo.currentData()
-        default_model = PROVIDER_MODELS.get(provider_key, "")
-        self.model_input.setText(default_model)
-        self._update_current_config_display()
-    
-    def _update_current_config_display(self):
-        provider = self.provider_combo.currentData()
-        model = self.model_input.text() or PROVIDER_MODELS.get(provider, "default")
-        
-        provider_display = PROVIDER_DISPLAY_NAMES.get(provider, provider)
-        self.current_provider_label.setText(provider_display)
-        self.current_model_label.setText(f"模型: {model}")
-    
-    def _test_connection(self):
-        provider = self.provider_combo.currentData()
-        api_key = self.api_key_input.text()
-        model = self.model_input.text()
-        
-        if not api_key:
-            QMessageBox.warning(self, "测试连接", "请输入 API Key")
-            return
-        
-        self.test_btn.setEnabled(False)
-        self.test_btn.setText("测试中...")
-        
-        # 创建并启动测试连接线程
-        self.test_worker = TestConnectionWorker(provider, api_key, model)
-        self.test_worker.finished.connect(self._on_test_finished)
-        self.test_worker.start()
-    
-    def _on_test_finished(self, success, error, response):
-        provider = self.provider_combo.currentData()
-        model = self.model_input.text()
-        
-        if success:
-            QMessageBox.information(self, "测试连接", 
-                f"✓ 连接成功！\n\nProvider: {PROVIDER_DISPLAY_NAMES.get(provider, provider)}\nModel: {model}")
-        else:
-            QMessageBox.critical(self, "测试连接", 
-                f"✗ 连接失败\n\n错误: {error}")
-        
-        self.test_btn.setEnabled(True)
-        self.test_btn.setText("测试连接")
-    
     def _on_ok_clicked(self):
-        api_key = self.api_key_input.text().strip()
-        if not api_key:
-            reply = QMessageBox.question(
-                self, "确认",
-                "API Key 未设置，是否保存？",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.No:
-                return
-        
         self.accept()
     
     def get_settings(self):
@@ -643,9 +838,6 @@ class SettingsDialog(QDialog):
                 factor_keys.append(key)
         
         return {
-            "provider": self.provider_combo.currentData(),
-            "api_key": self.api_key_input.text(),
-            "model": self.model_input.text(),
             "stream": self.stream_checkbox.isChecked(),
             "max_tokens": self.max_tokens_spin.value(),
             "gateway_enabled": self.gateway_enabled_checkbox.isChecked(),
@@ -664,21 +856,12 @@ class SettingsDialog(QDialog):
         }
     
     def load_settings(self, settings: dict):
-        for i in range(self.provider_combo.count()):
-            if self.provider_combo.itemData(i) == settings.get("provider"):
-                self.provider_combo.setCurrentIndex(i)
-                break
-        
-        self.api_key_input.setText(settings.get("api_key", ""))
-        self.model_input.setText(settings.get("model", ""))
         self.stream_checkbox.setChecked(settings.get("stream", True))
         self.max_tokens_spin.setValue(settings.get("max_tokens", 1024))
         
         self.gateway_enabled_checkbox.setChecked(settings.get("gateway_enabled", False))
         self.gateway_port_input.setText(str(settings.get("gateway_port", 18989)))
         self.gateway_stream_checkbox.setChecked(settings.get("gateway_stream", True))
-        
-        self._update_current_config_display()
         
         profile = settings.get("profile", {})
         self.name_input.setText(profile.get("name", ""))

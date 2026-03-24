@@ -44,56 +44,53 @@ class ChatPanel(QWidget):
         self.setStyleSheet("""
             QWidget {
                 background-color: #1e1e1e;
+                color: #d4d4d4;
             }
         """)
         
         self._load_icons()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
         # 对话显示区域
         self.chat_display = QTextEdit()
         self.chat_display.setReadOnly(True)
         self.chat_display.setStyleSheet("""
             QTextEdit {
-                background-color: #252526;
-                border: 1px solid #3c3c3c;
-                border-radius: 8px;
-                padding: 15px;
+                background-color: #1e1e1e;
+                border: none;
+                padding: 10px;
                 font-size: 14px;
                 color: #d4d4d4;
             }
         """)
-        self.chat_display.setFont(QFont("SF Pro Text", 13))
-        layout.addWidget(self.chat_display)
+        layout.addWidget(self.chat_display, 1)
         
         # 输入区域
         input_container = QWidget()
         input_container.setStyleSheet("""
             background-color: #252526;
-            border-radius: 8px;
-            padding: 5px;
+            border-top: 1px solid #3c3c3c;
+            padding: 10px;
         """)
         input_layout = QHBoxLayout(input_container)
-        input_layout.setContentsMargins(10, 5, 10, 5)
+        input_layout.setContentsMargins(0, 0, 0, 0)
+        input_layout.setSpacing(10)
         
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText("输入消息... (Enter 发送, Ctrl+Shift+S 清空)")
+        self.input_field.setPlaceholderText("输入消息...")
         self.input_field.setStyleSheet("""
             QLineEdit {
                 background-color: #3c3c3c;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 15px;
+                border: 1px solid #555;
+                border-radius: 4px;
+                padding: 8px;
                 font-size: 14px;
                 color: #d4d4d4;
             }
             QLineEdit::placeholder {
                 color: #888;
-            }
-            QLineEdit:focus {
-                border: 2px solid #0e639c;
             }
         """)
         self.input_field.returnPressed.connect(self._send_message)
@@ -104,16 +101,12 @@ class ChatPanel(QWidget):
                 background-color: #0e639c;
                 color: white;
                 border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
+                border-radius: 4px;
+                padding: 8px 16px;
                 font-size: 14px;
-                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #0d5a8f;
             }
             QPushButton:disabled {
                 background-color: #555;
@@ -122,9 +115,8 @@ class ChatPanel(QWidget):
         """)
         self.send_button.clicked.connect(self._send_message)
         
-        input_layout.addWidget(self.input_field)
+        input_layout.addWidget(self.input_field, 1)
         input_layout.addWidget(self.send_button)
-        layout.addWidget(input_container)
         
         self.agent = None
         self.worker = None
@@ -175,14 +167,14 @@ class ChatPanel(QWidget):
         self.append_message("OpenToad", result, is_streaming=False)
         self.send_button.setEnabled(True)
         self.send_button.setText("发送")
-        self.input_field.setPlaceholderText("输入消息... (Enter 发送)")
+        self.input_field.setPlaceholderText("输入消息...")
         self.input_field.setFocus()
     
     def _on_error(self, error: str):
         self.append_message("Error", f"❌ {error}", is_error=True)
         self.send_button.setEnabled(True)
         self.send_button.setText("发送")
-        self.input_field.setPlaceholderText("输入消息... (Enter 发送)")
+        self.input_field.setPlaceholderText("输入消息...")
         self.input_field.setFocus()
     
     def append_message(self, role: str, content: str, is_user=False, is_error=False, is_streaming=False):
@@ -202,7 +194,7 @@ class ChatPanel(QWidget):
             }
             icon_path = icon_map.get(role)
             if icon_path and os.path.exists(icon_path):
-                return f'<img src="{icon_path}" width="16" height="16" style="vertical-align: middle;">'
+                return f'<img src="{icon_path}" width="20" height="20" style="vertical-align: middle; margin-right: 8px;">'
             emoji_map = {
                 "You": "👤",
                 "OpenToad": "🐸",
@@ -216,23 +208,31 @@ class ChatPanel(QWidget):
         
         if is_user:
             html = f'''
-            <div style="margin: 12px 0; padding: 12px; background-color: #2d4a3e; border-radius: 12px; border-left: 4px solid #4ec9b0;">
-                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
-                    {icon} You · {timestamp}
+            <div style="display: flex; flex-direction: column; align-items: flex-end; margin: 10px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                    <span style="color: #888; font-size: 12px; margin-right: 8px;">{timestamp}</span>
+                    <span style="color: #888; font-size: 12px; font-weight: 500;">You</span>
+                    <span style="margin-left: 8px;">{icon}</span>
                 </div>
-                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-                    {self._format_content(content)}
+                <div style="max-width: 80%; padding: 10px; background-color: #0e639c; border-radius: 8px;">
+                    <div style="color: #ffffff; font-size: 14px;">
+                        {self._format_content(content)}
+                    </div>
                 </div>
             </div>
             '''
         elif is_error:
             html = f'''
-            <div style="margin: 12px 0; padding: 12px; background-color: #3c2020; border-radius: 12px; border-left: 4px solid #f44747;">
-                <div style="color: #f44747; font-size: 11px; margin-bottom: 6px;">
-                    {icon} Error · {timestamp}
+            <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                    <span style="margin-right: 8px;">{icon}</span>
+                    <span style="color: #f44747; font-size: 12px; font-weight: 500;">Error</span>
+                    <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
                 </div>
-                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-                    {self._format_content(content)}
+                <div style="max-width: 80%; padding: 10px; background-color: #3c2020; border-radius: 8px; border-left: 3px solid #f44747;">
+                    <div style="color: #d4d4d4; font-size: 14px;">
+                        {self._format_content(content)}
+                    </div>
                 </div>
             </div>
             '''
@@ -244,23 +244,31 @@ class ChatPanel(QWidget):
             cursor.deleteChar()
             
             html = f'''
-            <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
-                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
-                    {icon} OpenToad · {timestamp}
+            <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                    <span style="margin-right: 8px;">{icon}</span>
+                    <span style="color: {color}; font-size: 12px; font-weight: 500;">OpenToad</span>
+                    <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
                 </div>
-                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-                    {self._format_content(content)}<span style="color: #666;">▌</span>
+                <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
+                    <div style="color: #d4d4d4; font-size: 14px;">
+                        {self._format_content(content)}<span style="color: #666;">▌</span>
+                    </div>
                 </div>
             </div>
             '''
         else:
             html = f'''
-            <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
-                <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
-                    {icon} OpenToad · {timestamp}
+            <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                    <span style="margin-right: 8px;">{icon}</span>
+                    <span style="color: {color}; font-size: 12px; font-weight: 500;">OpenToad</span>
+                    <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
                 </div>
-                <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-                    {self._format_content(content)}
+                <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
+                    <div style="color: #d4d4d4; font-size: 14px;">
+                        {self._format_content(content)}
+                    </div>
                 </div>
             </div>
             '''
@@ -278,14 +286,19 @@ class ChatPanel(QWidget):
         
         timestamp = datetime.now().strftime("%H:%M")
         icon = "🐸"
+        color = "#4ec9b0"
         
         html = f'''
-        <div style="margin: 12px 0; padding: 12px; background-color: #2d3d4a; border-radius: 12px; border-left: 4px solid #569cd6;">
-            <div style="color: #888; font-size: 11px; margin-bottom: 6px;">
-                {icon} OpenToad · {timestamp}
+        <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
+            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                <span style="margin-right: 8px;">{icon}</span>
+                <span style="color: {color}; font-size: 12px; font-weight: 500;">OpenToad</span>
+                <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
             </div>
-            <div style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-                {self._format_content(content)}{'<span style="color: #666;">▌</span>' if is_streaming else ''}
+            <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
+                <div style="color: #d4d4d4; font-size: 14px;">
+                    {self._format_content(content)}{'<span style="color: #666;">▌</span>' if is_streaming else ''}
+                </div>
             </div>
         </div>
         '''
@@ -305,13 +318,13 @@ class ChatPanel(QWidget):
         
         content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', content)
         content = re.sub(r'\*(.+?)\*', r'<em>\1</em>', content)
-        content = re.sub(r'`(.+?)`', r'<code style="background: #3c3c3c; padding: 2px 6px; border-radius: 3px; font-family: monospace;">\1</code>', content)
+        content = re.sub(r'`(.+?)`', r'<code style="background: #3c3c3c; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 12px;">\1</code>', content)
         
         code_block_pattern = r'```(\w+)?\n(.*?)```'
         def code_block_replace(match):
             lang = match.group(1) or ''
             code = match.group(2)
-            return f'<pre style="background: #1e1e1e; padding: 12px; border-radius: 6px; overflow-x: auto;"><code>{code}</code></pre>'
+            return f'<div style="margin: 10px 0; border-radius: 4px; overflow: hidden; border: 1px solid #444;"><div style="background: #282a36; padding: 4px 8px; font-size: 12px; color: #888; border-bottom: 1px solid #444;">{lang if lang else "Code"}</div><pre style="background: #282a36; padding: 8px; margin: 0; overflow-x: auto; font-family: monospace; font-size: 12px;"><code>{code}</code></pre></div>'
         
         content = re.sub(code_block_pattern, code_block_replace, content, flags=re.DOTALL)
         

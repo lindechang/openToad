@@ -1,12 +1,47 @@
 {
-  "provider": "deepseek",
-  "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
-  "model": "deepseek-chat",
   "stream": true,
   "max_tokens": 1024,
-  "server_url": "http://toadapi.cocofei.com",
-  "instance_id": "4a70a447-4ffd-499c-872a-835c3ed025bc",
   "gateway_enabled": true,
   "gateway_port": 18989,
-  "gateway_stream": true
+  "gateway_stream": true,
+  "profile": {
+    "name": "",
+    "nickname": "",
+    "age_range": "under18",
+    "occupation": "",
+    "personality": "",
+    "interests": [],
+    "price_sensitivity": "budget",
+    "decision_factors": []
+  },
+  "instance_id": "847b0240-bdee-4eb0-81af-31553fa97f10",
+  "current_llm_config": {
+    "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
+    "id": "deepseek",
+    "model": "deepseek-chat",
+    "provider": "deepseek"
+  },
+  "default_llm_config": {
+    "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
+    "id": "deepseek",
+    "model": "deepseek-chat",
+    "provider": "deepseek"
+  },
+  "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
+  "llm_configs": [
+    {
+      "api_key": "sk-1dc968af8fbc47df920d5ed8258e369c",
+      "id": "qianwen",
+      "model": "qwen3.5-plus",
+      "provider": "qianwen"
+    },
+    {
+      "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
+      "id": "deepseek",
+      "model": "deepseek-chat",
+      "provider": "deepseek"
+    }
+  ],
+  "model": "deepseek-chat",
+  "provider": "deepseek"
 }

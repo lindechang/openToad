@@ -6,76 +6,46 @@ from .types import LLMProvider, ChatOptions, ChatResponse, Message
 class QianwenProvider:
     name = "qianwen"
     
-    def __init__(self, api_key: str, base_url: str = "https://dashscope.aliyuncs.com/api/v1"):
-        self.api_key = api_key
-        self.base_url = base_url
+    def __init__(self, api_key: str, base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"):
+        from openai import OpenAI
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=60.0
+        )
     
     def chat(self, options: ChatOptions) -> ChatResponse:
-        url = f"{self.base_url}/services/aigc/text-generation/generation"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": options.model,
-            "input": {
-                "messages": [{"role": m.role, "content": m.content} for m in options.messages]
-            },
-            "parameters": {
-                "temperature": options.temperature or 0.7,
-                "max_tokens": options.max_tokens or 1024
-            }
-        }
-        resp = requests.post(url, json=payload, headers=headers, timeout=60)
-        data = resp.json()
+        response = self.client.chat.completions.create(
+            model=options.model,
+            messages=[{"role": m.role, "content": m.content} for m in options.messages],
+            temperature=options.temperature if options.temperature is not None else 0.7,
+            max_tokens=options.max_tokens if options.max_tokens is not None else 1024
+        )
         
-        if "output" in data and "choices" in data["output"]:
-            content = data["output"]["choices"][0]["message"]["content"]
-            return ChatResponse(content=content, finish_reason="stop")
-        raise Exception(f"API error: {data}")
+        return ChatResponse(
+            content=response.choices[0].message.content or "",
+            finish_reason=response.choices[0].finish_reason or "stop"
+        )
     
     def chat_stream(self, options: ChatOptions, on_chunk: callable) -> ChatResponse:
-        url = f"{self.base_url}/services/aigc/text-generation/generation"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": options.model,
-            "input": {
-                "messages": [{"role": m.role, "content": m.content} for m in options.messages]
-            },
-            "parameters": {
-                "temperature": options.temperature or 0.7,
-                "max_tokens": options.max_tokens or 1024,
-                "incremental_output": True
-            }
-        }
+        stream = self.client.chat.completions.create(
+            model=options.model,
+            messages=[{"role": m.role, "content": m.content} for m in options.messages],
+            temperature=options.temperature if options.temperature is not None else 0.7,
+            max_tokens=options.max_tokens if options.max_tokens is not None else 1024,
+            stream=True
+        )
         
-        with requests.post(url, json=payload, headers=headers, stream=True, timeout=60) as resp:
-            content = ""
-            for line in resp.iter_lines():
-                if line:
-                    line = line.decode("utf-8")
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]":
-                            break
-                        import json
-                        try:
-                            chunk = json.loads(data)
-                            if "output" in chunk and "choices" in chunk["output"]:
-                                delta = chunk["output"]["choices"][0].get("delta", {})
-                                if "content" in delta:
-                                    text = delta["content"]
-                                    content += text
-                                    on_chunk(text)
-                        except:
-                            pass
-            return ChatResponse(content=content, finish_reason="stop")
+        content = ""
+        for chunk in stream:
+            text = chunk.choices[0].delta.content or ""
+            content += text
+            on_chunk(text)
+        
+        return ChatResponse(content=content, finish_reason="stop")
     
     def list_models(self) -> list[str]:
-        return ["qwen-turbo", "qwen-plus", "qwen-max", "qwen-max-longcontext"]
+        return ["qwen-turbo", "qwen-plus", "qwen-max", "qwen3.5-plus", "qwen3-max"]
 
 
 class ErnieProvider:

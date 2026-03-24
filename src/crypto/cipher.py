@@ -12,7 +12,11 @@ class CryptoManager:
         if key is None:
             self._key: Optional[bytes] = None
         elif isinstance(key, str):
-            self._key = key.encode() if len(key) == 44 else base64.urlsafe_b64decode(key)
+            decoded = base64.urlsafe_b64decode(key)
+            if len(decoded) == 32:
+                self._key = key.encode()
+            else:
+                self._key = key.encode()
         else:
             self._key = key
         self._fernet = Fernet(self._key) if self._key else None

@@ -9,17 +9,36 @@ from src.providers import create_provider
 from src.agent import Agent, AgentConfig
 from src.tools import register_default_tools, global_tools
 from src.providers.types import ChatOptions, Message
-from src.memory import MemoryCore
+from src.memory import MemoryCore, MemoryStorage
+from src.crypto.cipher import CryptoManager
 import asyncio
 
 class AgentWrapper:
-    def __init__(self, provider: str, api_key: str, model: str, stream: bool = True):
+    def __init__(self, provider: str, api_key: str, model: str, stream: bool = True, session=None):
         register_default_tools()
         
         self.stream_enabled = stream
         self.provider = create_provider(provider, api_key)
         self.agent = Agent(self.provider, AgentConfig(model=model, stream=stream))
-        self.memory = MemoryCore()
+        self._session = session
+        self.memory = self._create_memory()
+    
+    def _create_memory(self) -> MemoryCore:
+        from pathlib import Path
+        storage = None
+        user_id = None
+        if self._session:
+            user_id = getattr(self._session, 'user_id', None)
+        
+        if self._session and self._session.encryption_key:
+            crypto = CryptoManager(self._session.encryption_key)
+            storage = MemoryStorage(crypto=crypto, user_id=user_id)
+        return MemoryCore(storage=storage)
+    
+    def update_session(self, session):
+        """更新会话，用于登录后启用加密"""
+        self._session = session
+        self.memory = self._create_memory()
     
     async def chat(self, message: str) -> str:
         return await self.agent.run(message)

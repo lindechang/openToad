@@ -39,4 +39,4 @@ class DeepSeekProvider:
         return ChatResponse(content=content, finish_reason="stop")
     
     def list_models(self) -> list[str]:
-        return ["deepseek-chat", "deepseek-coder"]
+        return ["deepseek-chat", "deepseek-reasoner", "deepseek-coder"]

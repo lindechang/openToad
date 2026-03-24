@@ -1,7 +1,4 @@
 {
-  "provider": "deepseek",
-  "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
-  "model": "deepseek-chat",
   "stream": true,
   "max_tokens": 1024,
   "profile": {

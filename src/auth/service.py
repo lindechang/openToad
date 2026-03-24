@@ -18,6 +18,7 @@ class UserSession:
     email: str
     encryption_key: str
     token: str
+    memory_id: str = None
 
 
 class AuthService:
@@ -49,25 +50,43 @@ class AuthService:
         })
 
         token = login_response["token"]
-        encryption_response = self._http.post("/api/auth/encryption-key", data={
-            "token": token
-        })
+        headers = {"Authorization": f"Bearer {token}"}
+        encryption_response = self._http.post(
+            "/api/auth/encryption-key",
+            data=None,
+            headers=headers
+        )
 
         user_session = UserSession(
-            user_id=login_response["user_id"],
+            user_id=str(login_response["user"]["id"]),
             email=email,
-            encryption_key=encryption_response["encryption_key"],
-            token=token
+            encryption_key=encryption_response["encryptionKey"],
+            token=token,
+            memory_id=login_response["user"].get("memory_id")
         )
 
         self._save_session(user_session)
         self._session = user_session
         return user_session
 
+    def register(self, email: str, password: str, name: str = "") -> dict:
+        """Register a new account."""
+        return self._http.post("/api/auth/register", data={
+            "email": email,
+            "password": password,
+            "name": name
+        })
+
     def logout(self) -> None:
         """Logout and clear session."""
         self._session = None
         self._delete_session()
+    
+    def update_memory_id(self, memory_id: str) -> None:
+        """Update the selected memory_id in the session."""
+        if self._session:
+            self._session.memory_id = memory_id
+            self._save_session(self._session)
 
     def _load_session(self) -> Optional[UserSession]:
         """Load session from disk."""
@@ -76,7 +95,13 @@ class AuthService:
         try:
             with open(self.SESSION_FILE, "r") as f:
                 data = json.load(f)
-            return UserSession(**data)
+            return UserSession(
+                user_id=data.get("user_id"),
+                email=data.get("email"),
+                encryption_key=data.get("encryption_key"),
+                token=data.get("token"),
+                memory_id=data.get("memory_id")
+            )
         except (json.JSONDecodeError, TypeError, KeyError):
             return None
 

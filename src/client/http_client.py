@@ -17,8 +17,8 @@ class HttpClient:
         response.raise_for_status()
         return response.json() if response.content else None
 
-    def post(self, endpoint: str, data: Optional[Dict] = None) -> Any:
+    def post(self, endpoint: str, data: Optional[Dict] = None, headers: Optional[Dict] = None) -> Any:
         url = self._build_url(endpoint)
-        response = self.session.post(url, json=data, timeout=self.timeout)
+        response = self.session.post(url, json=data, headers=headers, timeout=self.timeout)
         response.raise_for_status()
         return response.json() if response.content else None
