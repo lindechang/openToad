@@ -58,7 +58,9 @@ def status():
 
 
 @auth_cli.command()
-def login(server: str = "http://localhost:8000"):
+def login(
+    server: str = typer.Option("http://localhost:8000", "--server")
+):
     """Login to OpenToad server."""
     console.print("[bold]Login to OpenToad[/bold]\n")
     
