@@ -7,15 +7,24 @@ from contextlib import contextmanager
 
 from .types import MemoryItem, MemoryArchive, Identity, MemoryCategory
 
+try:
+    from ..crypto.cipher import CryptoManager
+except ImportError:
+    CryptoManager = None
+
 
 class MemoryStorage:
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: Optional[str] = None, crypto: Optional["CryptoManager"] = None):
         if db_path is None:
             home = Path.home()
             self.db_path = home / ".opentoad" / "memory.db"
         else:
             self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._crypto = crypto
+        self._encrypted = crypto is not None
+        self._plain_path = self.db_path.with_suffix(self.db_path.suffix + ".plain")
+        self._handle_encrypted_db()
         self._init_db()
 
     def _init_db(self):
@@ -59,9 +68,25 @@ class MemoryStorage:
             conn.execute("INSERT OR IGNORE INTO identity (id, created_at, updated_at) VALUES (1, datetime('now'), datetime('now'))")
             conn.commit()
 
+    def _handle_encrypted_db(self):
+        if not self._encrypted:
+            return
+        if self.db_path.exists() and self.db_path.stat().st_size > 0:
+            self._crypto.decrypt_file(str(self.db_path), str(self._plain_path))
+        elif self._plain_path.exists():
+            pass
+        else:
+            self._plain_path.touch()
+
+    def _encrypt_and_save(self):
+        if not self._encrypted:
+            return
+        self._crypto.encrypt_file(str(self._plain_path), str(self.db_path))
+
     @contextmanager
     def _get_conn(self):
-        conn = sqlite3.connect(str(self.db_path))
+        path = str(self._plain_path if self._encrypted else self.db_path)
+        conn = sqlite3.connect(path)
         conn.row_factory = sqlite3.Row
         try:
             yield conn
@@ -81,6 +106,7 @@ class MemoryStorage:
                 item.access_count, json.dumps(item.metadata)
             ))
             conn.commit()
+        self._encrypt_and_save()
 
     def get_memory(self, memory_id: str) -> Optional[MemoryItem]:
         with self._get_conn() as conn:
@@ -144,3 +170,4 @@ class MemoryStorage:
                 identity.updated_at.isoformat()
             ))
             conn.commit()
+        self._encrypt_and_save()
