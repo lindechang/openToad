@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QComboBox,
     QDialogButtonBox, QGroupBox, QLabel, QCheckBox, QSpinBox, QTabWidget,
-    QWidget, QListWidget, QAbstractItemView, QPushButton, QScrollArea,
-    QFrame, QMessageBox, QTextEdit
+    QWidget, QListWidget, QListWidgetItem, QAbstractItemView, QPushButton, 
+    QScrollArea, QFrame, QMessageBox, QTextEdit, QStackedWidget
 )
-from PySide6.QtCore import Qt, Signal, QThread
+from PySide6.QtCore import Qt, Signal, QThread, QSize
 from PySide6.QtGui import QIcon, QFont
 import sys
 import os
@@ -15,18 +15,6 @@ if PROJECT_ROOT not in sys.path:
 
 from src.auth.service import AuthService
 
-PROVIDER_DISPLAY_NAMES = {
-    "anthropic": "Claude (Anthropic)",
-    "openai": "OpenAI GPT",
-    "deepseek": "DeepSeek",
-    "qianwen": "阿里通义千问 (Qianwen)",
-    "ernie": "百度文心一言 (ERNIE)",
-    "hunyuan": "腾讯混元 (Hunyuan)",
-    "zhipu": "智谱ChatGLM (Zhipu)",
-    "kimi": "月之暗面 (Kimi)",
-    "gemini": "Google Gemini",
-    "ollama": "Ollama (本地)",
-}
 
 PROVIDERS = [
     ("anthropic", "Claude (Anthropic)"),
@@ -112,6 +100,16 @@ PROVIDER_MODELS = {
     ],
 }
 
+NAV_ITEMS = [
+    ("🤖", "AI 对话"),
+    ("🌰", "记忆体"),
+    ("📱", "手机连接"),
+    ("⚙️", "外观"),
+    ("🔔", "通知"),
+    ("🔒", "隐私"),
+    ("ℹ️", "关于"),
+]
+
 class TestConnectionWorker(QThread):
     finished = Signal(bool, str, str)
     
@@ -169,8 +167,8 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("设置 - OpenToad")
         self.setModal(True)
-        self.resize(550, 600)
-        self.setMinimumHeight(550)
+        self.resize(700, 500)
+        self.setMinimumSize(650, 450)
         
         self._setup_styles()
         self._init_ui()
@@ -201,26 +199,31 @@ class SettingsDialog(QDialog):
                 background-color: #3c3c3c;
                 border: 1px solid #555;
                 border-radius: 5px;
-                padding: 8px;
+                padding: 10px 12px;
                 color: #d4d4d4;
                 font-size: 13px;
+                min-height: 20px;
             }
             QLineEdit:focus {
                 border: 1px solid #0e639c;
+            }
+            QLineEdit::placeholder {
+                color: #888;
             }
             QComboBox {
                 background-color: #3c3c3c;
                 border: 1px solid #555;
                 border-radius: 5px;
-                padding: 6px;
+                padding: 8px 12px;
                 color: #d4d4d4;
+                min-height: 20px;
             }
             QComboBox:hover {
                 border: 1px solid #0e639c;
             }
             QComboBox::drop-down {
                 border: none;
-                width: 20px;
+                width: 24px;
             }
             QComboBox::down-arrow {
                 image: none;
@@ -238,6 +241,7 @@ class SettingsDialog(QDialog):
             QCheckBox {
                 spacing: 8px;
                 color: #d4d4d4;
+                font-size: 13px;
             }
             QCheckBox::indicator {
                 width: 16px;
@@ -251,50 +255,31 @@ class SettingsDialog(QDialog):
                 border-color: #0e639c;
             }
             QListWidget {
-                background-color: #3c3c3c;
-                border: 1px solid #555;
-                border-radius: 5px;
-                padding: 5px;
-                color: #d4d4d4;
+                background-color: #1e1e1e;
+                border: none;
+                padding: 8px;
             }
             QListWidget::item {
-                padding: 5px;
-                border-radius: 3px;
+                padding: 12px 16px;
+                border-radius: 6px;
+                color: #d4d4d4;
+                font-size: 13px;
             }
             QListWidget::item:selected {
-                background-color: #094771;
+                background-color: #0e639c;
                 color: #ffffff;
             }
-            QListWidget::item:hover {
-                background-color: #2a2d2e;
-            }
-            QTabWidget::pane {
-                border: 1px solid #3c3c3c;
-                border-radius: 8px;
-                background-color: #252526;
-            }
-            QTabBar::tab {
+            QListWidget::item:hover:!selected {
                 background-color: #2d2d2d;
-                color: #888;
-                padding: 10px 20px;
-                border: none;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
-            }
-            QTabBar::tab:selected {
-                background-color: #252526;
-                color: #4ec9b0;
-            }
-            QTabBar::tab:hover:!selected {
-                background-color: #3c3c3c;
             }
             QPushButton {
                 background-color: #0e639c;
                 color: white;
                 border: none;
-                border-radius: 5px;
-                padding: 8px 16px;
+                border-radius: 6px;
+                padding: 10px 20px;
                 font-size: 13px;
+                font-weight: 500;
             }
             QPushButton:hover {
                 background-color: #1177bb;
@@ -312,119 +297,151 @@ class SettingsDialog(QDialog):
             QPushButton#test_btn:hover {
                 background-color: #3d7a3d;
             }
-            QDialogButtonBox {
-                button-layout: 0;
+            QPushButton#toggle_password {
+                background-color: transparent;
+                border: none;
+                padding: 4px;
+                font-size: 16px;
+                min-width: 30px;
             }
-            QDialogButtonBox QPushButton {
-                min-width: 80px;
+            QPushButton#toggle_password:hover {
+                background-color: #3c3c3c;
+            }
+            QTextEdit {
+                background-color: #3c3c3c;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 8px;
+                color: #d4d4d4;
+                font-size: 13px;
+            }
+            QScrollArea {
+                border: none;
+                background-color: #252526;
+            }
+            QFrame#nav_separator {
+                background-color: #3c3c3c;
+                min-height: 1px;
+                max-height: 1px;
+                margin: 8px 16px;
             }
         """)
     
     def _init_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(10)
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        self._create_header(layout)
+        self._create_nav_panel(main_layout)
+        self._create_content_panel(main_layout)
         
-        tabs = QTabWidget()
-        tabs.addTab(self._create_llm_tab(), "🤖 LLM配置")
-        tabs.addTab(self._create_memory_tab(), "🌰 记忆体")
-        tabs.addTab(self._create_gateway_tab(), "📱 手机连接")
-        tabs.addTab(self._create_options_tab(), "⚙️ 选项")
-        
-        layout.addWidget(tabs)
-        
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self._on_ok_clicked)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        self.nav_list.currentRowChanged.connect(self._on_nav_changed)
+        self.nav_list.setCurrentRow(0)
     
-    def _create_header(self, parent_layout):
-        header_widget = QFrame()
-        header_widget.setStyleSheet("background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2d2d2d, stop:1 #3d3d3d); border-radius: 8px; padding: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);")
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(15, 10, 15, 10)
+    def _create_nav_panel(self, parent_layout):
+        nav_widget = QWidget()
+        nav_widget.setFixedWidth(180)
+        nav_widget.setStyleSheet("background-color: #1e1e1e; border-right: 1px solid #3c3c3c;")
+        nav_layout = QVBoxLayout(nav_widget)
+        nav_layout.setContentsMargins(8, 20, 8, 20)
+        nav_layout.setSpacing(4)
         
-        title_label = QLabel("🐸 OpenToad 设置")
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #4ec9b0;")
+        header = QLabel("🐸 设置")
+        header.setStyleSheet("font-size: 16px; font-weight: bold; color: #4ec9b0; padding: 8px 16px;")
+        nav_layout.addWidget(header)
         
-        version_label = QLabel("v1.0.0")
-        version_label.setStyleSheet("font-size: 12px; color: #888;")
+        self.nav_list = QListWidget()
+        self.nav_list.setFocusPolicy(Qt.NoFocus)
         
-        header_layout.addWidget(title_label)
-        header_layout.addStretch()
-        header_layout.addWidget(version_label)
+        for icon, text in NAV_ITEMS:
+            item = QListWidgetItem(f"  {icon}  {text}")
+            item.setSizeHint(QSize(160, 40))
+            self.nav_list.addItem(item)
         
-        parent_layout.addWidget(header_widget)
+        nav_layout.addWidget(self.nav_list)
+        nav_layout.addStretch()
+        
+        parent_layout.addWidget(nav_widget)
     
-    def _create_llm_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+    def _create_content_panel(self, parent_layout):
+        self.content_stack = QStackedWidget()
         
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+        self.content_stack.addWidget(self._create_llm_page())
+        self.content_stack.addWidget(self._create_memory_page())
+        self.content_stack.addWidget(self._create_gateway_page())
+        self.content_stack.addWidget(self._create_appearance_page())
+        self.content_stack.addWidget(self._create_notification_page())
+        self.content_stack.addWidget(self._create_privacy_page())
+        self.content_stack.addWidget(self._create_about_page())
+        
+        parent_layout.addWidget(self.content_stack, 1)
+    
+    def _on_nav_changed(self, index):
+        self.content_stack.setCurrentIndex(index)
+    
+    def _create_llm_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
         layout.setSpacing(15)
         
-        provider_group = QGroupBox("LLM 配置")
-        provider_layout = QFormLayout()
-        provider_layout.setSpacing(12)
+        header = QLabel("AI 对话")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 20px;")
+        layout.addWidget(header)
+        
+        provider_label = QLabel("服务商")
+        provider_label.setStyleSheet("font-size: 13px; color: #d4d4d4; margin-bottom: 6px;")
+        layout.addWidget(provider_label)
         
         self.provider_combo = QComboBox()
+        self.provider_combo.setFixedHeight(40)
         for key, name in PROVIDERS:
             self.provider_combo.addItem(name, key)
+        layout.addWidget(self.provider_combo)
+        
+        layout.addSpacing(15)
+        
+        api_key_label = QLabel("API Key")
+        api_key_label.setStyleSheet("font-size: 13px; color: #d4d4d4; margin-bottom: 6px;")
+        layout.addWidget(api_key_label)
+        
+        api_key_container = QWidget()
+        api_key_layout = QHBoxLayout(api_key_container)
+        api_key_layout.setContentsMargins(0, 0, 0, 0)
+        api_key_layout.setSpacing(4)
         
         self.api_key_input = QLineEdit()
-        self.api_key_input.setPlaceholderText("API Key")
+        self.api_key_input.setPlaceholderText("输入 API Key")
         self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.api_key_input.setFixedHeight(40)
         
         toggle_btn = QPushButton("👁")
-        toggle_btn.setFixedWidth(35)
+        toggle_btn.setObjectName("toggle_password")
+        toggle_btn.setFixedWidth(40)
+        toggle_btn.setFixedHeight(40)
         toggle_btn.clicked.connect(self._toggle_api_key)
-        toggle_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #555;
-                padding: 6px;
-                font-size: 14px;
-            }
-        """)
+        toggle_btn.setToolTip("显示/隐藏密码")
         
-        api_key_layout = QHBoxLayout()
-        api_key_layout.addWidget(self.api_key_input)
+        api_key_layout.addWidget(self.api_key_input, 1)
         api_key_layout.addWidget(toggle_btn)
         
-        self.model_combo = QComboBox()
-        self.model_combo.setEditable(True)
-        self.provider_combo.currentIndexChanged.connect(self._on_provider_changed)
-        self._populate_models(self.provider_combo.currentData())
+        layout.addWidget(api_key_container)
         
-        provider_layout.addRow("服务商:", self.provider_combo)
-        provider_layout.addRow("API Key:", api_key_layout)
-        provider_layout.addRow("模型:", self.model_combo)
-        
-        provider_group.setLayout(provider_layout)
-        layout.addWidget(provider_group)
+        layout.addSpacing(20)
         
         btn_layout = QHBoxLayout()
         
-        self.save_llm_btn = QPushButton("💾 保存")
-        self.save_llm_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                padding: 10px 20px;
-            }
-            QPushButton:hover { background-color: #1177bb; }
-        """)
+        self.save_llm_btn = QPushButton("保存")
+        self.save_llm_btn.setFixedWidth(100)
+        self.save_llm_btn.setFixedHeight(40)
         btn_layout.addWidget(self.save_llm_btn)
         
-        self.test_llm_btn = QPushButton("🔗 测试连接")
+        self.test_llm_btn = QPushButton("测试连接")
+        self.test_llm_btn.setFixedWidth(100)
+        self.test_llm_btn.setFixedHeight(40)
         self.test_llm_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2d5a2d;
-                color: white;
-                padding: 10px 20px;
             }
             QPushButton:hover { background-color: #3d7a3d; }
         """)
@@ -434,26 +451,25 @@ class SettingsDialog(QDialog):
         
         layout.addLayout(btn_layout)
         
-        self.llm_status_label = QLabel("填写上方信息保存 LLM 配置")
-        self.llm_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        self.llm_status_label = QLabel("")
+        self.llm_status_label.setStyleSheet("color: #888; font-size: 12px; margin-top: 10px;")
         layout.addWidget(self.llm_status_label)
         
         layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
+        return page
     
-    def _create_memory_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+    def _create_memory_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
         layout.setSpacing(15)
         
-        group = QGroupBox("记忆体设置")
-        group_layout = QFormLayout()
-        group_layout.setSpacing(12)
+        header = QLabel("🌰 记忆体设置")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        form_layout = QFormLayout()
+        form_layout.setSpacing(12)
         
         self.memory_name_input = QLineEdit()
         self.memory_name_input.setPlaceholderText("记忆体名称")
@@ -462,14 +478,10 @@ class SettingsDialog(QDialog):
         self.memory_desc_input.setPlaceholderText("记忆体描述（可选）")
         self.memory_desc_input.setMaximumHeight(80)
         
-        self.memory_status_label = QLabel("")
-        self.memory_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        form_layout.addRow("名称", self.memory_name_input)
+        form_layout.addRow("描述", self.memory_desc_input)
         
-        group_layout.addRow("名称:", self.memory_name_input)
-        group_layout.addRow("描述:", self.memory_desc_input)
-        
-        group.setLayout(group_layout)
-        layout.addWidget(group)
+        layout.addLayout(form_layout)
         
         self.memory_info_label = QLabel("")
         self.memory_info_label.setStyleSheet("color: #888; font-size: 12px;")
@@ -477,15 +489,7 @@ class SettingsDialog(QDialog):
         
         btn_layout = QHBoxLayout()
         
-        self.save_memory_btn = QPushButton("💾 保存")
-        self.save_memory_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                padding: 10px 20px;
-            }
-            QPushButton:hover { background-color: #1177bb; }
-        """)
+        self.save_memory_btn = QPushButton("保存")
         self.save_memory_btn.clicked.connect(self._save_memory_settings)
         btn_layout.addWidget(self.save_memory_btn)
         
@@ -493,13 +497,15 @@ class SettingsDialog(QDialog):
         
         layout.addLayout(btn_layout)
         
+        self.memory_status_label = QLabel("")
+        self.memory_status_label.setStyleSheet("color: #888; font-size: 12px;")
         layout.addWidget(self.memory_status_label)
         
         self._load_memory_info()
         
         layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
+        
+        return page
     
     def _load_memory_info(self):
         try:
@@ -537,18 +543,10 @@ class SettingsDialog(QDialog):
             self.memory_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
     
     def _populate_models(self, provider):
-        self.model_combo.blockSignals(True)
-        self.model_combo.clear()
-        models = PROVIDER_MODELS.get(provider, [])
-        for model_id, model_name in models:
-            self.model_combo.addItem(model_name, model_id)
-        self.model_combo.blockSignals(False)
-        if self.model_combo.count() > 0:
-            self.model_combo.setCurrentIndex(0)
+        pass
     
     def _on_provider_changed(self, index):
-        provider = self.provider_combo.currentData()
-        self._populate_models(provider)
+        pass
     
     def _toggle_api_key(self):
         if self.api_key_input.echoMode() == QLineEdit.EchoMode.Password:
@@ -556,14 +554,15 @@ class SettingsDialog(QDialog):
         else:
             self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
     
-    def _create_options_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+    def _create_appearance_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
         layout.setSpacing(15)
+        
+        header = QLabel("⚙️ 外观")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
         
         group = QGroupBox("对话选项")
         options_layout = QFormLayout()
@@ -577,305 +576,141 @@ class SettingsDialog(QDialog):
         self.max_tokens_spin.setValue(1024)
         self.max_tokens_spin.setSuffix(" tokens")
         
-        options_layout.addRow("流式输出:", self.stream_checkbox)
-        options_layout.addRow("最大Token:", self.max_tokens_spin)
+        options_layout.addRow("流式输出", self.stream_checkbox)
+        options_layout.addRow("最大Token", self.max_tokens_spin)
         
         group.setLayout(options_layout)
         layout.addWidget(group)
         
         layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
+        return page
     
-    def _create_account_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+    def _create_notification_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
         layout.setSpacing(15)
         
-        self._create_auth_status_card(layout)
-        self._create_login_card(layout)
-        self._create_register_card(layout)
+        header = QLabel("🔔 通知设置")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        group = QGroupBox("通知")
+        group_layout = QVBoxLayout()
+        group_layout.setSpacing(12)
+        
+        self.notify_enabled = QCheckBox("启用通知")
+        self.notify_enabled.setChecked(True)
+        group_layout.addWidget(self.notify_enabled)
+        
+        self.notify_sound = QCheckBox("提示音")
+        self.notify_sound.setChecked(True)
+        group_layout.addWidget(self.notify_sound)
+        
+        group.setLayout(group_layout)
+        layout.addWidget(group)
         
         layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
+        return page
     
-    def _create_auth_status_card(self, parent_layout):
-        card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #2d3d4a;
-                border: 1px solid #4ec9b0;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
-        card_layout = QHBoxLayout(card)
-        
-        self.auth_status_icon = QLabel("🔒")
-        self.auth_status_icon.setStyleSheet("font-size: 24px;")
-        
-        info_layout = QVBoxLayout()
-        info_layout.setSpacing(3)
-        
-        self.auth_status_label = QLabel("未登录")
-        self.auth_status_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff;")
-        
-        self.auth_status_desc = QLabel("登录后可加密保护您的记忆数据")
-        self.auth_status_desc.setStyleSheet("font-size: 12px; color: #aaaaaa;")
-        
-        info_layout.addWidget(self.auth_status_label)
-        info_layout.addWidget(self.auth_status_desc)
-        
-        self.logout_btn = QPushButton("登出")
-        self.logout_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #8b3a3a;
-                color: white;
-                padding: 8px 16px;
-            }
-            QPushButton:hover {
-                background-color: #a04545;
-            }
-        """)
-        self.logout_btn.clicked.connect(self._do_logout)
-        self.logout_btn.hide()
-        
-        card_layout.addWidget(self.auth_status_icon)
-        card_layout.addLayout(info_layout)
-        card_layout.addStretch()
-        card_layout.addWidget(self.logout_btn)
-        
-        parent_layout.addWidget(card)
-        
-        self._check_initial_auth_status()
-    
-    def _check_initial_auth_status(self):
-        auth_service = self._get_auth_service()
-        if auth_service.is_logged_in:
-            session = auth_service.session
-            self._update_auth_display(True, session.email)
-        else:
-            self._update_auth_display(False)
-    
-    def _create_login_card(self, parent_layout):
-        group = QGroupBox("登录")
-        form_layout = QFormLayout()
-        form_layout.setSpacing(12)
-        
-        self.login_email_input = QLineEdit()
-        self.login_email_input.setPlaceholderText("邮箱")
-        
-        self.login_password_input = QLineEdit()
-        self.login_password_input.setPlaceholderText("密码")
-        self.login_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        
-        self.login_btn = QPushButton("登录")
-        self.login_btn.clicked.connect(self._do_login)
-        
-        self.login_status_label = QLabel("")
-        self.login_status_label.setStyleSheet("color: #888; font-size: 12px;")
-        
-        form_layout.addRow("邮箱:", self.login_email_input)
-        form_layout.addRow("密码:", self.login_password_input)
-        form_layout.addRow("", self.login_btn)
-        form_layout.addRow("", self.login_status_label)
-        
-        group.setLayout(form_layout)
-        parent_layout.addWidget(group)
-    
-    def _create_register_card(self, parent_layout):
-        group = QGroupBox("注册新账号")
-        form_layout = QFormLayout()
-        form_layout.setSpacing(12)
-        
-        self.reg_name_input = QLineEdit()
-        self.reg_name_input.setPlaceholderText("昵称")
-        
-        self.reg_email_input = QLineEdit()
-        self.reg_email_input.setPlaceholderText("邮箱")
-        
-        self.reg_password_input = QLineEdit()
-        self.reg_password_input.setPlaceholderText("密码")
-        self.reg_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        
-        self.reg_password2_input = QLineEdit()
-        self.reg_password2_input.setPlaceholderText("确认密码")
-        self.reg_password2_input.setEchoMode(QLineEdit.EchoMode.Password)
-        
-        self.register_btn = QPushButton("注册")
-        self.register_btn.clicked.connect(self._do_register)
-        
-        self.register_status_label = QLabel("")
-        self.register_status_label.setStyleSheet("color: #888; font-size: 12px;")
-        
-        form_layout.addRow("昵称:", self.reg_name_input)
-        form_layout.addRow("邮箱:", self.reg_email_input)
-        form_layout.addRow("密码:", self.reg_password_input)
-        form_layout.addRow("确认:", self.reg_password2_input)
-        form_layout.addRow("", self.register_btn)
-        form_layout.addRow("", self.register_status_label)
-        
-        group.setLayout(form_layout)
-        parent_layout.addWidget(group)
-    
-    def _get_auth_service(self):
-        server_url = self.parent().settings.get("server_url", "http://api.opentoad.cn") if hasattr(self.parent(), 'settings') else "http://api.opentoad.cn"
-        return AuthService(server_url)
-    
-    def _update_auth_display(self, logged_in=False, email=None):
-        if logged_in and email:
-            self.auth_status_icon.setText("🔓")
-            self.auth_status_label.setText(f"已登录: {email}")
-            self.auth_status_desc.setText("您的记忆数据已加密保护")
-            self.logout_btn.show()
-        else:
-            self.auth_status_icon.setText("🔒")
-            self.auth_status_label.setText("未登录")
-            self.auth_status_desc.setText("登录后可加密保护您的记忆数据")
-            self.logout_btn.hide()
-    
-    def _do_login(self):
-        email = self.login_email_input.text().strip()
-        password = self.login_password_input.text()
-        
-        if not email or not password:
-            self.login_status_label.setText("请输入邮箱和密码")
-            self.login_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
-            return
-        
-        self.login_btn.setEnabled(False)
-        self.login_btn.setText("登录中...")
-        self.login_status_label.setText("正在登录...")
-        
-        auth_service = self._get_auth_service()
-        self.auth_worker = AuthWorker(auth_service, 'login', email, password)
-        self.auth_worker.finished.connect(self._on_login_success)
-        self.auth_worker.error.connect(self._on_login_error)
-        self.auth_worker.start()
-    
-    def _on_login_success(self, session):
-        self.login_btn.setEnabled(True)
-        self.login_btn.setText("登录")
-        self.login_status_label.setText(f"✓ 登录成功: {session.email}")
-        self.login_status_label.setStyleSheet("color: #4ec9b0; font-size: 12px;")
-        self._update_auth_display(True, session.email)
-        self.login_email_input.clear()
-        self.login_password_input.clear()
-        
-        if hasattr(self.parent(), '_update_auth_status'):
-            self.parent().session = session
-            self.parent()._update_auth_status()
-    
-    def _on_login_error(self, error_msg):
-        self.login_btn.setEnabled(True)
-        self.login_btn.setText("登录")
-        self.login_status_label.setText(f"✗ 登录失败: {error_msg}")
-        self.login_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
-    
-    def _do_register(self):
-        name = self.reg_name_input.text().strip()
-        email = self.reg_email_input.text().strip()
-        password = self.reg_password_input.text()
-        password2 = self.reg_password2_input.text()
-        
-        if not name or not email or not password:
-            self.register_status_label.setText("请填写所有字段")
-            self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
-            return
-        
-        if password != password2:
-            self.register_status_label.setText("两次密码不一致")
-            self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
-            return
-        
-        self.register_btn.setEnabled(False)
-        self.register_btn.setText("注册中...")
-        self.register_status_label.setText("正在注册...")
-        
-        auth_service = self._get_auth_service()
-        self.auth_worker = AuthWorker(auth_service, 'register', email, password, name)
-        self.auth_worker.finished.connect(self._on_register_success)
-        self.auth_worker.error.connect(self._on_register_error)
-        self.auth_worker.start()
-    
-    def _on_register_success(self, result):
-        self.register_btn.setEnabled(True)
-        self.register_btn.setText("注册")
-        self.register_status_label.setText("✓ 注册成功！请登录")
-        self.register_status_label.setStyleSheet("color: #4ec9b0; font-size: 12px;")
-        
-        self.login_email_input.setText(self.reg_email_input.text())
-        self.reg_name_input.clear()
-        self.reg_email_input.clear()
-        self.reg_password_input.clear()
-        self.reg_password2_input.clear()
-    
-    def _on_register_error(self, error_msg):
-        self.register_btn.setEnabled(True)
-        self.register_btn.setText("注册")
-        self.register_status_label.setText(f"✗ 注册失败: {error_msg}")
-        self.register_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
-    
-    def _do_logout(self):
-        auth_service = self._get_auth_service()
-        auth_service.logout()
-        self._update_auth_display(False)
-        self.login_status_label.setText("")
-        self.register_status_label.setText("")
-        
-        if hasattr(self.parent(), '_update_auth_status'):
-            self.parent().session = None
-            self.parent()._update_auth_status()
-    
-    def _create_gateway_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
+    def _create_privacy_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
         layout.setSpacing(15)
         
-        self._create_gateway_info_card(layout)
-        self._create_gateway_config_card(layout)
+        header = QLabel("🔒 隐私设置")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        group = QGroupBox("隐私")
+        group_layout = QVBoxLayout()
+        group_layout.setSpacing(12)
+        
+        self.privacy_local = QCheckBox("本地存储所有数据")
+        self.privacy_local.setChecked(True)
+        self.privacy_local.setEnabled(False)
+        group_layout.addWidget(self.privacy_local)
+        
+        self.privacy_encrypt = QCheckBox("启用数据加密")
+        self.privacy_encrypt.setChecked(True)
+        group_layout.addWidget(self.privacy_encrypt)
+        
+        group.setLayout(group_layout)
+        layout.addWidget(group)
         
         layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
+        return page
     
-    def _create_gateway_info_card(self, parent_layout):
-        card = QFrame()
-        card.setStyleSheet("""
+    def _create_about_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
+        layout.setSpacing(15)
+        
+        header = QLabel("ℹ️ 关于")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        info_card = QFrame()
+        info_card.setStyleSheet("""
             QFrame {
                 background-color: #2d3d4a;
-                border: 1px solid #4ec9b0;
                 border-radius: 8px;
-                padding: 15px;
+                padding: 20px;
             }
         """)
-        card_layout = QVBoxLayout(card)
+        info_layout = QVBoxLayout(info_card)
+        info_layout.setSpacing(10)
         
-        title_label = QLabel("📱 手机 App 连接")
-        title_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #4ec9b0;")
+        name_label = QLabel("🐸 OpenToad")
+        name_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #4ec9b0;")
+        
+        version_label = QLabel("版本 1.0.0")
+        version_label.setStyleSheet("font-size: 13px; color: #aaaaaa;")
+        
+        desc_label = QLabel("你的 AI 记忆分身\n独立执行 · 长期记忆 · 主动行动")
+        desc_label.setStyleSheet("font-size: 13px; color: #aaaaaa; margin-top: 10px;")
+        
+        info_layout.addWidget(name_label)
+        info_layout.addWidget(version_label)
+        info_layout.addWidget(desc_label)
+        
+        layout.addWidget(info_card)
+        
+        layout.addStretch()
+        return page
+    
+    def _create_gateway_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 20, 30, 20)
+        layout.setSpacing(15)
+        
+        header = QLabel("📱 手机连接")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #4ec9b0; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        info_card = QFrame()
+        info_card.setStyleSheet("""
+            QFrame {
+                background-color: #2d3d4a;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+        """)
+        info_layout = QVBoxLayout(info_card)
         
         desc_label = QLabel(
-            "开启后，手机客户端可以通过 WebSocket 直接与此 OpenToad 终端通讯，"
-            "无需通过远程 API 服务器。"
+            "开启后，手机客户端可以通过 WebSocket 直接与此 OpenToad 终端通讯，无需通过远程 API 服务器。"
         )
-        desc_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        desc_label.setStyleSheet("color: #aaaaaa; font-size: 13px;")
         desc_label.setWordWrap(True)
         
-        card_layout.addWidget(title_label)
-        card_layout.addWidget(desc_label)
+        info_layout.addWidget(desc_label)
+        layout.addWidget(info_card)
         
-        parent_layout.addWidget(card)
-    
-    def _create_gateway_config_card(self, parent_layout):
         group = QGroupBox("Gateway 配置")
         config_layout = QFormLayout()
         config_layout.setSpacing(12)
@@ -891,11 +726,14 @@ class SettingsDialog(QDialog):
         self.gateway_stream_checkbox.setChecked(True)
         
         config_layout.addRow("", self.gateway_enabled_checkbox)
-        config_layout.addRow("端口:", self.gateway_port_input)
+        config_layout.addRow("端口", self.gateway_port_input)
         config_layout.addRow("", self.gateway_stream_checkbox)
         
         group.setLayout(config_layout)
-        parent_layout.addWidget(group)
+        layout.addWidget(group)
+        
+        layout.addStretch()
+        return page
     
     def _toggle_api_key_visibility(self):
         if self.api_key_input.echoMode() == QLineEdit.EchoMode.Password:
