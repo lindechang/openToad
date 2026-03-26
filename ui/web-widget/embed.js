@@ -50,6 +50,11 @@
   });
   
   function addMessage(content, isUser) {
+    // Prevent duplicate consecutive messages from being rendered
+    var last = messages.lastElementChild;
+    if (last && last.textContent === content && last.classList.contains(isUser ? 'user' : 'assistant')) {
+      return;
+    }
     var div = document.createElement('div');
     div.className = 'message ' + (isUser ? 'user' : 'assistant');
     div.textContent = content;
@@ -72,7 +77,17 @@
       body: JSON.stringify({ message: content, sessionId: sessionId })
     }).then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data.reply) addMessage(data.reply, false);
+        // Stream handling: if server sends incremental chunks, append to the last assistant message
+        if (data.reply) {
+          var last = messages.lastElementChild;
+          if (last && last.classList.contains('assistant')) {
+            // Append to the latest assistant message to simulate streaming
+            last.textContent = last.textContent + data.reply;
+          } else {
+            // No existing assistant message, render as a new one
+            addMessage(data.reply, false);
+          }
+        }
       }).catch(function() {
         addMessage('抱歉，发送失败了。', false);
       });

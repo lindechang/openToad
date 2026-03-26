@@ -20,6 +20,7 @@ class AgentWrapper:
         self.stream_enabled = stream
         self.provider = create_provider(provider, api_key)
         self.agent = Agent(self.provider, AgentConfig(model=model, stream=stream))
+        self.model = model
         self._session = session
         self.memory = self._create_memory()
     
@@ -47,10 +48,28 @@ class AgentWrapper:
         return asyncio.run(self.chat(message))
     
     def chat_stream(self, message: str, callback) -> str:
-        return asyncio.run(self._chat_stream_async(message, callback))
-    
-    async def _chat_stream_async(self, message: str, callback) -> str:
-        return await self.agent.run(message)
+        messages = [
+            Message(role="user", content=message)
+        ]
+        
+        full_content = []
+        
+        def on_chunk(text: str):
+            full_content.append(text)
+            callback(text)
+        
+        if self.stream_enabled:
+            response = self.provider.chat_stream(
+                ChatOptions(model=self.model, messages=messages),
+                on_chunk
+            )
+        else:
+            response = self.provider.chat(
+                ChatOptions(model=self.model, messages=messages)
+            )
+            callback(response.content)
+        
+        return "".join(full_content) if full_content else response.content
     
     def greet(self) -> str:
         return asyncio.run(self.agent.greet())

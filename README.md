@@ -70,12 +70,14 @@ OpenToad 是你的"第二个大脑"，更是你的执行分身。它能记住你
 
 ### 核心能力
 
-- **记忆体系统** - 独特的长期记忆/短期记忆架构
+- **记忆体系统** - 长期记忆存储
   - 身份记忆：记住自己是谁、服务于谁
   - 偏好记忆：学习主人的代码风格、沟通习惯
   - 知识记忆：积累主人告诉的事实和知识
   - 项目记忆：跟踪项目进度和上下文
-  - 封装记忆体：项目/对话完成后可打包存档，按需调用
+  - **本地存储**：记忆数据存储在本地 SQLite 数据库
+  - **记忆体加密**：支持 AES-256 加密，密钥由用户密码派生
+  - **账号绑定**：记忆体可绑定到用户账号，实现数据保护
 - **渐进式自我认知** - 身份由被赋予到自我探索逐渐形成
 - **智能遗忘机制** - 主人标记 + AI评估 + 使用频率，三重升级策略
 
@@ -139,6 +141,21 @@ ws://<电脑IP>:18989/ws
 ```bash
 python scripts/start_gateway.py --api-key your-key --model gpt-4o-mini
 ```
+
+## 🧠 记忆体
+
+OpenToad 使用单一记忆体存储所有对话上下文和数据。
+
+### 记忆体存储
+
+- **本地记忆体**：未登录用户使用，数据存储在 `~/.opentoad/memory.db`
+- **加密记忆体**：登录用户使用，AES-256 加密保护
+
+### 数据安全
+
+- API Key 存储在全局设置中，使用 AES-256 加密
+- 加密密钥从用户密码 PBKDF2 派生
+- 敏感信息不在 `settings.json` 中存储
 
 ## 🚀 快速开始
 
@@ -237,14 +254,14 @@ opentoad/
 │   │   ├── deepseek.py   # DeepSeek
 │   │   └── ollama.py     # 自部署
 │   ├── client/        # 实例通讯客户端 (HTTP)
-│   ├── gateway/        # WebSocket Gateway 服务 ⭐
+│   ├── gateway/       # WebSocket Gateway 服务 ⭐
 │   │   ├── server.py     # Gateway 服务端
 │   │   ├── ai_handler.py # AI 消息处理
-│   │   ├── protocol.py    # 消息协议
-│   │   └── config.py      # 配置
-│   └── profile.py     # 用户画像
+│   │   ├── protocol.py   # 消息协议
+│   │   └── config.py     # 配置
+│   └── auth/          # 认证服务
 ├── apps/              # 应用
-│   └── desktop/       # 桌面应用 (PySide6)
+│   └── desktop/      # 桌面应用 (PySide6)
 ├── scripts/           # 脚本
 │   ├── start_gateway.py      # Gateway 启动脚本
 │   └── test_gateway_client.py # 测试客户端

@@ -33,6 +33,98 @@ class MemorySelectorDialog(QDialog):
         self.load_memories()
     
     def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+            }
+            QWidget {
+                color: #d4d4d4;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            QLabel {
+                color: #d4d4d4;
+            }
+            QLineEdit {
+                background-color: #3c3c3c;
+                border: 1px solid #555;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 14px;
+                color: #d4d4d4;
+            }
+            QLineEdit:focus {
+                border: 2px solid #0e639c;
+                background-color: #424242;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                min-height: 40px;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #0d5a8f;
+            }
+            QPushButton:disabled {
+                background-color: #555;
+                color: #888;
+            }
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 16px;
+                padding-top: 12px;
+                color: #d4d4d4;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 8px;
+                color: #4ec9b0;
+            }
+            QRadioButton {
+                color: #d4d4d4;
+                font-size: 14px;
+                spacing: 8px;
+            }
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #555;
+                border-radius: 9px;
+                background-color: #3c3c3c;
+            }
+            QRadioButton::indicator:checked {
+                background-color: #0e639c;
+                border: 2px solid #0e639c;
+            }
+            QListWidget {
+                background-color: #252526;
+                border: 1px solid #3c3c3c;
+                border-radius: 8px;
+                padding: 8px;
+                color: #d4d4d4;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-radius: 4px;
+            }
+            QListWidget::item:selected {
+                background-color: #0e639c;
+            }
+            QListWidget::item:hover {
+                background-color: #2a2d2e;
+            }
+        """)
+        
         layout = QVBoxLayout(self)
         
         header = QLabel("请选择要使用的记忆体")
@@ -64,30 +156,12 @@ class MemorySelectorDialog(QDialog):
         layout.addWidget(options_group)
         
         self.local_list = QListWidget()
-        self.local_list.setStyleSheet("""
-            QListWidget {
-                background-color: #252526;
-                border: 1px solid #3c3c3c;
-                border-radius: 5px;
-                padding: 5px;
-                color: #d4d4d4;
-            }
-        """)
         self.local_list.itemDoubleClicked.connect(self._on_bind_local)
         layout.addWidget(QLabel("本地记忆体:"))
         layout.addWidget(self.local_list)
         
         self.new_name_input = QLineEdit()
         self.new_name_input.setPlaceholderText("输入新记忆体名称...")
-        self.new_name_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #252526;
-                border: 1px solid #3c3c3c;
-                border-radius: 5px;
-                padding: 8px;
-                color: #d4d4d4;
-            }
-        """)
         self.new_name_input.setVisible(False)
         layout.addWidget(QLabel("新记忆体名称:"))
         layout.addWidget(self.new_name_input)
@@ -105,8 +179,11 @@ class MemorySelectorDialog(QDialog):
                 background-color: #555;
                 color: white;
                 border: none;
-                border-radius: 5px;
+                border-radius: 8px;
                 padding: 10px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                min-height: 40px;
             }
             QPushButton:hover { background-color: #666; }
         """)
@@ -114,16 +191,6 @@ class MemorySelectorDialog(QDialog):
         btn_layout.addWidget(cancel_btn)
         
         self.confirm_btn = QPushButton("确定")
-        self.confirm_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover { background-color: #1177bb; }
-        """)
         self.confirm_btn.clicked.connect(self._on_confirm)
         btn_layout.addWidget(self.confirm_btn)
         

@@ -102,8 +102,8 @@ class MemoryStorage:
                 )
             """)
             conn.execute("""
-                INSERT OR IGNORE INTO memory_meta (id, memory_id, name, created_at, updated_at)
-                VALUES (1, ?, datetime('now'), datetime('now'), datetime('now'))
+                INSERT OR IGNORE INTO memory_meta (id, memory_id, name, description, bound_user_id, created_at, updated_at, last_synced_at)
+                VALUES (1, ?, '', '', NULL, datetime('now'), datetime('now'), NULL)
             """, (str(uuid.uuid4()),))
             conn.commit()
 
@@ -306,7 +306,7 @@ class MemoryStorage:
                         memory_id = parts[2]
                     else:
                         memory_id = None
-                    name = f"记忆体 {memory_id[:8]}..." if memory_id else "未命名"
+                    name = "未命名"
                     try:
                         temp_storage = MemoryStorage(db_path=str(f), crypto=crypto)
                         info = temp_storage.get_memory_info()
@@ -372,7 +372,19 @@ class MemoryStorage:
     
     @staticmethod
     def create_unbound_memory(name: str = "新记忆体") -> "MemoryStorage":
-        storage = MemoryStorage(crypto=None, user_id=None, memory_id=None)
+        import shutil
+        home = Path.home()
+        memories_dir = home / ".opentoad"
+        memory_db = memories_dir / "memory.db"
+        
+        if memory_db.exists():
+            memory_id = str(uuid.uuid4())
+            new_path = memories_dir / f"memory_local_{memory_id}.db"
+            shutil.move(str(memory_db), str(new_path))
+            storage = MemoryStorage(db_path=str(new_path), crypto=None, user_id=None, memory_id=memory_id)
+        else:
+            storage = MemoryStorage(crypto=None, user_id=None, memory_id=None)
+        
         storage.update_memory_info(name=name, bound_user_id=None)
         return storage
     

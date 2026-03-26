@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QComboBox,
     QDialogButtonBox, QGroupBox, QLabel, QCheckBox, QSpinBox, QTabWidget,
     QWidget, QListWidget, QAbstractItemView, QPushButton, QScrollArea,
-    QFrame, QMessageBox
+    QFrame, QMessageBox, QTextEdit
 )
 from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtGui import QIcon, QFont
@@ -111,38 +111,6 @@ PROVIDER_MODELS = {
         ("codellama", "Code Llama"),
     ],
 }
-
-INTEREST_FIELDS = [
-    "数码产品", "美妆护肤", "家居生活", "汽车用品", "服装时尚",
-    "食品饮料", "运动健身", "图书影音", "旅游出行", "母婴育儿",
-    "游戏动漫", "艺术品", "其他"
-]
-
-PRICE_SENSITIVITY = [
-    ("budget", "平价实惠"),
-    ("mid-range", "中端品质"),
-    ("premium", "高端奢华")
-]
-
-DECISION_FACTORS = [
-    ("function", "功能实用"),
-    ("appearance", "外观颜值"),
-    ("brand", "品牌知名度"),
-    ("price", "价格优惠"),
-    ("quality", "质量品质"),
-    ("reviews", "用户口碑"),
-    ("uniqueness", "独特稀有"),
-    ("service", "售后服务")
-]
-
-AGE_RANGES = [
-    ("under18", "18岁以下"),
-    ("18-25", "18-25岁"),
-    ("26-35", "26-35岁"),
-    ("36-45", "36-45岁"),
-    ("over45", "45岁以上")
-]
-
 
 class TestConnectionWorker(QThread):
     finished = Signal(bool, str, str)
@@ -360,7 +328,8 @@ class SettingsDialog(QDialog):
         self._create_header(layout)
         
         tabs = QTabWidget()
-        tabs.addTab(self._create_profile_tab(), "👤 用户画像")
+        tabs.addTab(self._create_llm_tab(), "🤖 LLM配置")
+        tabs.addTab(self._create_memory_tab(), "🌰 记忆体")
         tabs.addTab(self._create_gateway_tab(), "📱 手机连接")
         tabs.addTab(self._create_options_tab(), "⚙️ 选项")
         
@@ -389,6 +358,204 @@ class SettingsDialog(QDialog):
         
         parent_layout.addWidget(header_widget)
     
+    def _create_llm_tab(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(15)
+        
+        provider_group = QGroupBox("LLM 配置")
+        provider_layout = QFormLayout()
+        provider_layout.setSpacing(12)
+        
+        self.provider_combo = QComboBox()
+        for key, name in PROVIDERS:
+            self.provider_combo.addItem(name, key)
+        
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("API Key")
+        self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        toggle_btn = QPushButton("👁")
+        toggle_btn.setFixedWidth(35)
+        toggle_btn.clicked.connect(self._toggle_api_key)
+        toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #555;
+                padding: 6px;
+                font-size: 14px;
+            }
+        """)
+        
+        api_key_layout = QHBoxLayout()
+        api_key_layout.addWidget(self.api_key_input)
+        api_key_layout.addWidget(toggle_btn)
+        
+        self.model_combo = QComboBox()
+        self.model_combo.setEditable(True)
+        self.provider_combo.currentIndexChanged.connect(self._on_provider_changed)
+        self._populate_models(self.provider_combo.currentData())
+        
+        provider_layout.addRow("服务商:", self.provider_combo)
+        provider_layout.addRow("API Key:", api_key_layout)
+        provider_layout.addRow("模型:", self.model_combo)
+        
+        provider_group.setLayout(provider_layout)
+        layout.addWidget(provider_group)
+        
+        btn_layout = QHBoxLayout()
+        
+        self.save_llm_btn = QPushButton("💾 保存")
+        self.save_llm_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                padding: 10px 20px;
+            }
+            QPushButton:hover { background-color: #1177bb; }
+        """)
+        btn_layout.addWidget(self.save_llm_btn)
+        
+        self.test_llm_btn = QPushButton("🔗 测试连接")
+        self.test_llm_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2d5a2d;
+                color: white;
+                padding: 10px 20px;
+            }
+            QPushButton:hover { background-color: #3d7a3d; }
+        """)
+        btn_layout.addWidget(self.test_llm_btn)
+        
+        btn_layout.addStretch()
+        
+        layout.addLayout(btn_layout)
+        
+        self.llm_status_label = QLabel("填写上方信息保存 LLM 配置")
+        self.llm_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        layout.addWidget(self.llm_status_label)
+        
+        layout.addStretch()
+        scroll.setWidget(widget)
+        return scroll
+    
+    def _create_memory_tab(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(15)
+        
+        group = QGroupBox("记忆体设置")
+        group_layout = QFormLayout()
+        group_layout.setSpacing(12)
+        
+        self.memory_name_input = QLineEdit()
+        self.memory_name_input.setPlaceholderText("记忆体名称")
+        
+        self.memory_desc_input = QTextEdit()
+        self.memory_desc_input.setPlaceholderText("记忆体描述（可选）")
+        self.memory_desc_input.setMaximumHeight(80)
+        
+        self.memory_status_label = QLabel("")
+        self.memory_status_label.setStyleSheet("color: #888; font-size: 12px;")
+        
+        group_layout.addRow("名称:", self.memory_name_input)
+        group_layout.addRow("描述:", self.memory_desc_input)
+        
+        group.setLayout(group_layout)
+        layout.addWidget(group)
+        
+        self.memory_info_label = QLabel("")
+        self.memory_info_label.setStyleSheet("color: #888; font-size: 12px;")
+        layout.addWidget(self.memory_info_label)
+        
+        btn_layout = QHBoxLayout()
+        
+        self.save_memory_btn = QPushButton("💾 保存")
+        self.save_memory_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                padding: 10px 20px;
+            }
+            QPushButton:hover { background-color: #1177bb; }
+        """)
+        self.save_memory_btn.clicked.connect(self._save_memory_settings)
+        btn_layout.addWidget(self.save_memory_btn)
+        
+        btn_layout.addStretch()
+        
+        layout.addLayout(btn_layout)
+        
+        layout.addWidget(self.memory_status_label)
+        
+        self._load_memory_info()
+        
+        layout.addStretch()
+        scroll.setWidget(widget)
+        return scroll
+    
+    def _load_memory_info(self):
+        try:
+            main_window = self.parent()
+            if hasattr(main_window, '_memory_storage'):
+                info = main_window._memory_storage.get_memory_info()
+                if info:
+                    self.memory_name_input.setText(info.get("name", ""))
+                    self.memory_desc_input.setText(info.get("description", ""))
+                    
+                    is_bound = info.get("bound_user_id") is not None
+                    created = info.get("created_at", "")
+                    status = f"已绑定 · 创建于 {created[:10]}" if is_bound else f"未绑定 · 创建于 {created[:10]}"
+                    self.memory_info_label.setText(status)
+        except Exception as e:
+            self.memory_status_label.setText(f"加载失败: {e}")
+            self.memory_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+    
+    def _save_memory_settings(self):
+        name = self.memory_name_input.text().strip()
+        if not name:
+            self.memory_status_label.setText("请输入记忆体名称")
+            self.memory_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+            return
+        
+        try:
+            main_window = self.parent()
+            if hasattr(main_window, '_memory_storage'):
+                main_window._memory_storage.update_memory_info(name, self.memory_desc_input.toPlainText().strip())
+                main_window._update_sidebar_memory_name()
+                self.memory_status_label.setText("✓ 已保存")
+                self.memory_status_label.setStyleSheet("color: #4ec9b0; font-size: 12px;")
+        except Exception as e:
+            self.memory_status_label.setText(f"保存失败: {e}")
+            self.memory_status_label.setStyleSheet("color: #f14c4c; font-size: 12px;")
+    
+    def _populate_models(self, provider):
+        self.model_combo.blockSignals(True)
+        self.model_combo.clear()
+        models = PROVIDER_MODELS.get(provider, [])
+        for model_id, model_name in models:
+            self.model_combo.addItem(model_name, model_id)
+        self.model_combo.blockSignals(False)
+        if self.model_combo.count() > 0:
+            self.model_combo.setCurrentIndex(0)
+    
+    def _on_provider_changed(self, index):
+        provider = self.provider_combo.currentData()
+        self._populate_models(provider)
+    
+    def _toggle_api_key(self):
+        if self.api_key_input.echoMode() == QLineEdit.EchoMode.Password:
+            self.api_key_input.setEchoMode(QLineEdit.EchoMode.Normal)
+        else:
+            self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+    
     def _create_options_tab(self):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -415,23 +582,6 @@ class SettingsDialog(QDialog):
         
         group.setLayout(options_layout)
         layout.addWidget(group)
-        
-        layout.addStretch()
-        scroll.setWidget(widget)
-        return scroll
-    
-    def _create_profile_tab(self):
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setSpacing(15)
-        
-        self._create_basic_info_card(layout)
-        self._create_interests_card(layout)
-        self._create_prefs_card(layout)
         
         layout.addStretch()
         scroll.setWidget(widget)
@@ -747,71 +897,6 @@ class SettingsDialog(QDialog):
         group.setLayout(config_layout)
         parent_layout.addWidget(group)
     
-    def _create_basic_info_card(self, parent_layout):
-        group = QGroupBox("基本信息")
-        basic_layout = QFormLayout()
-        basic_layout.setSpacing(12)
-        
-        self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("助手名字")
-        
-        self.nickname_input = QLineEdit()
-        self.nickname_input.setPlaceholderText("助手昵称(可选)")
-        
-        self.age_combo = QComboBox()
-        for key, label in AGE_RANGES:
-            self.age_combo.addItem(label, key)
-        
-        self.occupation_input = QLineEdit()
-        self.occupation_input.setPlaceholderText("职业")
-        
-        self.personality_input = QLineEdit()
-        self.personality_input.setPlaceholderText("性格特点(可选)")
-        
-        basic_layout.addRow("名字:", self.name_input)
-        basic_layout.addRow("昵称:", self.nickname_input)
-        basic_layout.addRow("年龄:", self.age_combo)
-        basic_layout.addRow("职业:", self.occupation_input)
-        basic_layout.addRow("性格:", self.personality_input)
-        
-        group.setLayout(basic_layout)
-        parent_layout.addWidget(group)
-    
-    def _create_interests_card(self, parent_layout):
-        group = QGroupBox("兴趣领域 (可多选)")
-        interests_layout = QVBoxLayout()
-        
-        self.interests_list = QListWidget()
-        self.interests_list.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.interests_list.setMinimumHeight(120)
-        for field in INTEREST_FIELDS:
-            self.interests_list.addItem(field)
-        
-        interests_layout.addWidget(self.interests_list)
-        group.setLayout(interests_layout)
-        parent_layout.addWidget(group)
-    
-    def _create_prefs_card(self, parent_layout):
-        group = QGroupBox("消费偏好")
-        prefs_layout = QFormLayout()
-        prefs_layout.setSpacing(12)
-        
-        self.price_combo = QComboBox()
-        for key, label in PRICE_SENSITIVITY:
-            self.price_combo.addItem(label, key)
-        
-        self.factors_list = QListWidget()
-        self.factors_list.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.factors_list.setMinimumHeight(100)
-        for key, label in DECISION_FACTORS:
-            self.factors_list.addItem(label)
-        
-        prefs_layout.addRow("价格敏感度:", self.price_combo)
-        prefs_layout.addRow("决策因素:", self.factors_list)
-        
-        group.setLayout(prefs_layout)
-        parent_layout.addWidget(group)
-    
     def _toggle_api_key_visibility(self):
         if self.api_key_input.echoMode() == QLineEdit.EchoMode.Password:
             self.api_key_input.setEchoMode(QLineEdit.EchoMode.Normal)
@@ -824,35 +909,12 @@ class SettingsDialog(QDialog):
         self.accept()
     
     def get_settings(self):
-        selected_interests = [self.interests_list.item(i).text()
-                            for i in range(self.interests_list.count())
-                            if self.interests_list.item(i).isSelected()]
-        
-        selected_factors = [self.factors_list.item(i).text()
-                          for i in range(self.factors_list.count())
-                          if self.factors_list.item(i).isSelected()]
-        
-        factor_keys = []
-        for key, label in DECISION_FACTORS:
-            if label in selected_factors:
-                factor_keys.append(key)
-        
         return {
             "stream": self.stream_checkbox.isChecked(),
             "max_tokens": self.max_tokens_spin.value(),
             "gateway_enabled": self.gateway_enabled_checkbox.isChecked(),
             "gateway_port": int(self.gateway_port_input.text() or "18989"),
             "gateway_stream": self.gateway_stream_checkbox.isChecked(),
-            "profile": {
-                "name": self.name_input.text(),
-                "nickname": self.nickname_input.text(),
-                "age_range": self.age_combo.currentData(),
-                "occupation": self.occupation_input.text(),
-                "personality": self.personality_input.text(),
-                "interests": selected_interests,
-                "price_sensitivity": self.price_combo.currentData(),
-                "decision_factors": factor_keys
-            }
         }
     
     def load_settings(self, settings: dict):
@@ -862,31 +924,3 @@ class SettingsDialog(QDialog):
         self.gateway_enabled_checkbox.setChecked(settings.get("gateway_enabled", False))
         self.gateway_port_input.setText(str(settings.get("gateway_port", 18989)))
         self.gateway_stream_checkbox.setChecked(settings.get("gateway_stream", True))
-        
-        profile = settings.get("profile", {})
-        self.name_input.setText(profile.get("name", ""))
-        self.nickname_input.setText(profile.get("nickname", ""))
-        
-        for i in range(self.age_combo.count()):
-            if self.age_combo.itemData(i) == profile.get("age_range"):
-                self.age_combo.setCurrentIndex(i)
-                break
-        
-        self.occupation_input.setText(profile.get("occupation", ""))
-        self.personality_input.setText(profile.get("personality", ""))
-        
-        interests = profile.get("interests", [])
-        for i in range(self.interests_list.count()):
-            if self.interests_list.item(i).text() in interests:
-                self.interests_list.item(i).setSelected(True)
-        
-        for i in range(self.price_combo.count()):
-            if self.price_combo.itemData(i) == profile.get("price_sensitivity"):
-                self.price_combo.setCurrentIndex(i)
-                break
-        
-        factors = profile.get("decision_factors", [])
-        factor_labels = [label for key, label in DECISION_FACTORS if key in factors]
-        for i in range(self.factors_list.count()):
-            if self.factors_list.item(i).text() in factor_labels:
-                self.factors_list.item(i).setSelected(True)

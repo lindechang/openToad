@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import threading
 from typing import Dict, Optional, Callable, Awaitable
 
 import uvicorn
@@ -29,6 +30,8 @@ class GatewayServer:
         self.app = FastAPI()
         self._setup_routes()
         self._running = False
+        self._server: Optional[uvicorn.Server] = None
+        self._thread: Optional[threading.Thread] = None
 
     def _setup_routes(self):
         @self.app.websocket("/ws")
@@ -134,18 +137,17 @@ class GatewayServer:
             port=self.config.port,
             log_level="info"
         )
-        server = uvicorn.Server(config)
+        self._server = uvicorn.Server(config)
         
         if background:
-            import threading
-            thread = threading.Thread(target=server.run, daemon=True)
-            thread.start()
+            self._thread = threading.Thread(target=self._server.run, daemon=True)
+            self._thread.start()
             self._running = True
             logger.info(f"Gateway started on {self.config.host}:{self.config.port}")
         else:
             self._running = True
             logger.info(f"Starting Gateway on {self.config.host}:{self.config.port}")
-            server.run()
+            self._server.run()
 
     async def start_async(self):
         config = uvicorn.Config(
@@ -161,8 +163,17 @@ class GatewayServer:
 
     def stop(self):
         self._running = False
+        
+        # 关闭所有客户端连接
         for instance_id in list(self.clients.keys()):
             self._remove_client(instance_id)
+        
+        # 关闭uvicorn服务器
+        if self._server:
+            self._server.should_exit = True
+            if self._thread and self._thread.is_alive():
+                self._thread.join(timeout=2)
+        
         logger.info("Gateway stopped")
 
 

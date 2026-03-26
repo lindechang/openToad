@@ -30,12 +30,6 @@
   "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
   "llm_configs": [
     {
-      "api_key": "sk-1dc968af8fbc47df920d5ed8258e369c",
-      "id": "qianwen",
-      "model": "qwen3.5-plus",
-      "provider": "qianwen"
-    },
-    {
       "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
       "id": "deepseek",
       "model": "deepseek-chat",

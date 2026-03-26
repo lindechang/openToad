@@ -32,6 +32,8 @@ class ChatWorker(QThread):
 
 
 class ChatPanel(QWidget):
+    first_response_complete = Signal(object, str, str)
+    
     def _load_icons(self):
         icons_dir = os.path.join(PROJECT_ROOT, 'icons')
         self.icon_user = os.path.join(icons_dir, 'opentoad-logo-120.png')
@@ -53,7 +55,6 @@ class ChatPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # 对话显示区域
         self.chat_display = QTextEdit()
         self.chat_display.setReadOnly(True)
         self.chat_display.setStyleSheet("""
@@ -67,7 +68,6 @@ class ChatPanel(QWidget):
         """)
         layout.addWidget(self.chat_display, 1)
         
-        # 输入区域
         input_container = QWidget()
         input_container.setStyleSheet("""
             background-color: #252526;
@@ -118,11 +118,16 @@ class ChatPanel(QWidget):
         input_layout.addWidget(self.input_field, 1)
         input_layout.addWidget(self.send_button)
         
+        layout.addWidget(input_container)
+        
         self.agent = None
         self.worker = None
         self.current_streaming_message = ""
         self.last_message_role = None
         self.input_field.setFocus()
+        self._first_response_done = False
+        self._first_user_message = ""
+        self._messages = []
     
     def keyPressEvent(self, event: QKeyEvent):
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_L:
@@ -142,14 +147,18 @@ class ChatPanel(QWidget):
         if not message:
             return
         
-        self.append_message("You", message, is_user=True)
+        if not self._first_response_done:
+            self._first_user_message = message
+        
+        self._messages.append({"role": "You", "content": message, "is_user": True})
+        self._render_messages()
+        
         self.input_field.clear()
         self.send_button.setEnabled(False)
         self.send_button.setText("⏳")
         self.input_field.setPlaceholderText("正在思考...")
         
         self.current_streaming_message = ""
-        self.last_message_role = None
         
         stream_enabled = getattr(self.agent, 'stream_enabled', True)
         
@@ -159,25 +168,20 @@ class ChatPanel(QWidget):
         self.worker.error.connect(self._on_error)
         self.worker.start()
     
-    def _on_streaming(self, text: str):
-        self.current_streaming_message += text
-        self._update_last_message("OpenToad", self.current_streaming_message, is_streaming=True)
+    def _render_messages(self):
+        all_html = ""
+        for msg in self._messages:
+            all_html += self._build_message_html(msg["role"], msg["content"], 
+                is_user=msg.get("is_user", False), 
+                is_error=msg.get("is_error", False),
+                is_streaming=msg.get("is_streaming", False))
+        
+        self.chat_display.setHtml(all_html)
+        self.chat_display.verticalScrollBar().setValue(
+            self.chat_display.verticalScrollBar().maximum()
+        )
     
-    def _on_result(self, result: str):
-        self.append_message("OpenToad", result, is_streaming=False)
-        self.send_button.setEnabled(True)
-        self.send_button.setText("发送")
-        self.input_field.setPlaceholderText("输入消息...")
-        self.input_field.setFocus()
-    
-    def _on_error(self, error: str):
-        self.append_message("Error", f"❌ {error}", is_error=True)
-        self.send_button.setEnabled(True)
-        self.send_button.setText("发送")
-        self.input_field.setPlaceholderText("输入消息...")
-        self.input_field.setFocus()
-    
-    def append_message(self, role: str, content: str, is_user=False, is_error=False, is_streaming=False):
+    def _build_message_html(self, role, content, is_user=False, is_error=False, is_streaming=False):
         timestamp = datetime.now().strftime("%H:%M")
         
         colors = {
@@ -187,27 +191,18 @@ class ChatPanel(QWidget):
             "Error": "#f44747"
         }
         
-        def get_icon(role):
-            icon_map = {
-                "You": self.icon_user,
-                "OpenToad": self.icon_opentoad,
-            }
-            icon_path = icon_map.get(role)
-            if icon_path and os.path.exists(icon_path):
-                return f'<img src="{icon_path}" width="20" height="20" style="vertical-align: middle; margin-right: 8px;">'
-            emoji_map = {
-                "You": "👤",
-                "OpenToad": "🐸",
-                "System": "⚙️",
-                "Error": "⚠️"
-            }
-            return emoji_map.get(role, "💬")
+        emoji_map = {
+            "You": "👤",
+            "OpenToad": "🐸",
+            "System": "⚙️",
+            "Error": "⚠️"
+        }
         
+        icon = emoji_map.get(role, "💬")
         color = colors.get(role, "#d4d4d4")
-        icon = get_icon(role)
         
         if is_user:
-            html = f'''
+            return f'''
             <div style="display: flex; flex-direction: column; align-items: flex-end; margin: 10px 0;">
                 <div style="display: flex; align-items: center; margin-bottom: 4px;">
                     <span style="color: #888; font-size: 12px; margin-right: 8px;">{timestamp}</span>
@@ -222,7 +217,7 @@ class ChatPanel(QWidget):
             </div>
             '''
         elif is_error:
-            html = f'''
+            return f'''
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
                 <div style="display: flex; align-items: center; margin-bottom: 4px;">
                     <span style="margin-right: 8px;">{icon}</span>
@@ -236,29 +231,8 @@ class ChatPanel(QWidget):
                 </div>
             </div>
             '''
-        elif is_streaming:
-            cursor = self.chat_display.textCursor()
-            cursor.movePosition(QTextCursor.End)
-            cursor.select(QTextCursor.BlockUnderCursor)
-            cursor.removeSelectedText()
-            cursor.deleteChar()
-            
-            html = f'''
-            <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
-                <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                    <span style="margin-right: 8px;">{icon}</span>
-                    <span style="color: {color}; font-size: 12px; font-weight: 500;">OpenToad</span>
-                    <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
-                </div>
-                <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
-                    <div style="color: #d4d4d4; font-size: 14px;">
-                        {self._format_content(content)}<span style="color: #666;">▌</span>
-                    </div>
-                </div>
-            </div>
-            '''
         else:
-            html = f'''
+            return f'''
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
                 <div style="display: flex; align-items: center; margin-bottom: 4px;">
                     <span style="margin-right: 8px;">{icon}</span>
@@ -267,49 +241,58 @@ class ChatPanel(QWidget):
                 </div>
                 <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
                     <div style="color: #d4d4d4; font-size: 14px;">
-                        {self._format_content(content)}
+                        {self._format_content(content)}{'<span style="color: #666;">▌</span>' if is_streaming else ''}
                     </div>
                 </div>
             </div>
             '''
-        
-        self.chat_display.append(html)
-        self.chat_display.verticalScrollBar().setValue(
-            self.chat_display.verticalScrollBar().maximum()
-        )
     
-    def _update_last_message(self, role: str, content: str, is_streaming=False):
-        cursor = self.chat_display.textCursor()
-        cursor.movePosition(QTextCursor.End)
+    def _on_streaming(self, text: str):
+        self.current_streaming_message += text
         
-        cursor.movePosition(QTextCursor.PreviousBlock)
+        if self._messages and self._messages[-1]["role"] == "OpenToad" and self._messages[-1].get("is_streaming"):
+            self._messages[-1]["content"] = self.current_streaming_message
+        else:
+            self._messages.append({"role": "OpenToad", "content": self.current_streaming_message, "is_streaming": True})
         
-        timestamp = datetime.now().strftime("%H:%M")
-        icon = "🐸"
-        color = "#4ec9b0"
+        self._render_messages()
+    
+    def _on_result(self, result: str):
+        self.current_streaming_message = result
         
-        html = f'''
-        <div style="display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0;">
-            <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                <span style="margin-right: 8px;">{icon}</span>
-                <span style="color: {color}; font-size: 12px; font-weight: 500;">OpenToad</span>
-                <span style="color: #888; font-size: 12px; margin-left: 8px;">{timestamp}</span>
-            </div>
-            <div style="max-width: 80%; padding: 10px; background-color: #2d3d4a; border-radius: 8px; border-left: 3px solid {color};">
-                <div style="color: #d4d4d4; font-size: 14px;">
-                    {self._format_content(content)}{'<span style="color: #666;">▌</span>' if is_streaming else ''}
-                </div>
-            </div>
-        </div>
-        '''
+        if self._messages and self._messages[-1]["role"] == "OpenToad":
+            self._messages[-1]["content"] = result
+            self._messages[-1]["is_streaming"] = False
+        else:
+            self._messages.append({"role": "OpenToad", "content": result, "is_streaming": False})
         
-        cursor.select(QTextCursor.BlockUnderCursor)
-        cursor.removeSelectedText()
+        self._render_messages()
         
-        self.chat_display.append(html)
-        self.chat_display.verticalScrollBar().setValue(
-            self.chat_display.verticalScrollBar().maximum()
-        )
+        if not self._first_response_done:
+            self._first_response_done = True
+            self.first_response_complete.emit(self, self._first_user_message, result)
+        
+        self.send_button.setEnabled(True)
+        self.send_button.setText("发送")
+        self.input_field.setPlaceholderText("输入消息...")
+        self.input_field.setFocus()
+    
+    def _on_error(self, error: str):
+        self.append_message("Error", f"❌ {error}", is_error=True)
+        self.send_button.setEnabled(True)
+        self.send_button.setText("发送")
+        self.input_field.setPlaceholderText("输入消息...")
+        self.input_field.setFocus()
+    
+    def append_message(self, role: str, content: str, is_user=False, is_error=False, is_streaming=False):
+        self._messages.append({
+            "role": role, 
+            "content": content, 
+            "is_user": is_user,
+            "is_error": is_error,
+            "is_streaming": is_streaming
+        })
+        self._render_messages()
     
     def _format_content(self, content: str):
         content = content.replace("&", "&amp;")
@@ -333,4 +316,5 @@ class ChatPanel(QWidget):
         return content
     
     def clear(self):
+        self._messages = []
         self.chat_display.clear()
