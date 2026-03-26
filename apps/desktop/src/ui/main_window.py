@@ -762,9 +762,8 @@ class MainWindow(QMainWindow):
         }
         self._sessions.append(session_data)
         
-        # 在侧边栏中添加会话项
-        session_name = f"会话 {len(self._sessions)}"
-        sidebar_row = self.session_sidebar.add_session(session_name)
+        # 在侧边栏中添加会话项（一开始不显示标题，等收到回复后再生成）
+        sidebar_row = self.session_sidebar.add_session("新会话")
         session_data['sidebar_row'] = sidebar_row
         
         # 连接信号
