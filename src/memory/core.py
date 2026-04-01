@@ -4,14 +4,27 @@ from datetime import datetime
 from .storage import MemoryStorage
 from .types import MemoryItem, MemoryCategory, Identity
 
+try:
+    from ..auth.service import AuthService
+except ImportError:
+    from auth.service import AuthService
+
 
 class MemoryCore:
-    def __init__(self, storage: Optional[MemoryStorage] = None):
+    def __init__(self, storage: Optional[MemoryStorage] = None, auth_service: Optional[AuthService] = None):
         self.storage = storage or MemoryStorage()
+        self.auth_service = auth_service
         self._identity = None
+
+    def _check_access(self) -> None:
+        """Check if user has access to encrypted storage."""
+        if hasattr(self.storage, '_encrypted') and self.storage._encrypted:
+            if not self.auth_service or not self.auth_service.is_logged_in:
+                raise PermissionError("Authentication required to access encrypted storage")
 
     @property
     def identity(self) -> Identity:
+        self._check_access()
         if self._identity is None:
             self._identity = self.storage.get_identity()
         return self._identity
@@ -23,6 +36,7 @@ class MemoryCore:
         weight: float = 0.5,
         source: str = "conversation"
     ) -> MemoryItem:
+        self._check_access()
         item = MemoryItem(
             content=content,
             category=category,
@@ -44,13 +58,16 @@ class MemoryCore:
         limit: int = 20,
         category: Optional[MemoryCategory] = None
     ) -> List[MemoryItem]:
+        self._check_access()
         memories = self.storage.get_memories(category=category)
         return sorted(memories, key=lambda m: m.last_accessed, reverse=True)[:limit]
 
     def get_long_term_memories(self) -> List[MemoryItem]:
+        self._check_access()
         return self.storage.get_memories(long_term_only=True)
 
     def access_memory(self, memory_id: str) -> Optional[MemoryItem]:
+        self._check_access()
         item = self.storage.get_memory(memory_id)
         if item:
             item.access_count += 1
@@ -59,6 +76,7 @@ class MemoryCore:
         return item
 
     def upgrade_to_long_term(self, memory_id: str) -> bool:
+        self._check_access()
         item = self.storage.get_memory(memory_id)
         if item:
             item.is_long_term = True
@@ -68,6 +86,7 @@ class MemoryCore:
         return False
 
     def set_identity(self, name: str = "", role: str = "", owner_name: str = "") -> Identity:
+        self._check_access()
         identity = self.identity
         if name:
             identity.name = name
@@ -80,18 +99,21 @@ class MemoryCore:
         return identity
 
     def add_principle(self, principle: str) -> None:
+        self._check_access()
         identity = self.identity
         if principle not in identity.principles:
             identity.principles.append(principle)
             self.storage.save_identity(identity)
 
     def add_trait(self, trait: str) -> None:
+        self._check_access()
         identity = self.identity
         if trait not in identity.discovered_traits:
             identity.discovered_traits.append(trait)
             self.storage.save_identity(identity)
 
     def to_context_string(self) -> str:
+        self._check_access()
         identity = self.identity
         long_term = self.get_long_term_memories()
         

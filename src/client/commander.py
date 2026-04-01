@@ -38,7 +38,7 @@ class CommanderService:
     def stop(self):
         self._running = False
         if self._thread:
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=1)
         logger.info("Commander service stopped")
 
     def fetch_commands(self) -> List[Command]:

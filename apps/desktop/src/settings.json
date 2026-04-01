@@ -5,5 +5,8 @@
   "stream": true,
   "max_tokens": 1024,
   "server_url": "http://toadapi.cocofei.com",
-  "instance_id": "4a70a447-4ffd-499c-872a-835c3ed025bc"
+  "instance_id": "4a70a447-4ffd-499c-872a-835c3ed025bc",
+  "gateway_enabled": true,
+  "gateway_port": 18989,
+  "gateway_stream": true
 }

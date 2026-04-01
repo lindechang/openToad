@@ -4,7 +4,15 @@ from rich.prompt import Prompt
 
 from .core import MemoryCore
 
+try:
+    from src.auth.service import AuthService
+except ImportError:
+    from auth.service import AuthService
+
 cli = typer.Typer(help="Memory system management")
+auth_cli = typer.Typer(help="Authentication management")
+
+cli.add_typer(auth_cli, name="auth")
 console = Console()
 
 
@@ -47,6 +55,55 @@ def status():
     
     long_term = core.get_long_term_memories()
     console.print(f"\n[cyan]Long-term memories:[/cyan] {len(long_term)}")
+
+
+@auth_cli.command()
+def login(
+    server: str = typer.Option("http://localhost:8000", "--server")
+):
+    """Login to OpenToad server."""
+    console.print("[bold]Login to OpenToad[/bold]\n")
+    
+    email = Prompt.ask("Email")
+    password = Prompt.ask("Password", password=True)
+    
+    auth = AuthService(server)
+    try:
+        session = auth.login(email, password)
+        console.print(f"\n[bold green]Logged in successfully![/bold green]")
+        console.print(f"  User: {session.email}")
+        console.print(f"  User ID: {session.user_id}")
+    except Exception as e:
+        console.print(f"[bold red]Login failed:[/bold red] {e}")
+        raise typer.Exit(1)
+
+
+@auth_cli.command()
+def logout():
+    """Logout from OpenToad server."""
+    console.print("[bold]Logout[/bold]\n")
+    
+    auth = AuthService("http://localhost:8000")
+    if auth.is_logged_in:
+        auth.logout()
+        console.print("[bold green]Logged out successfully![/bold green]")
+    else:
+        console.print("[yellow]Not logged in[/yellow]")
+
+
+@auth_cli.command()
+def status():
+    """Show login status."""
+    console.print("[bold]Authentication Status[/bold]\n")
+    
+    auth = AuthService("http://localhost:8000")
+    if auth.is_logged_in:
+        session = auth.session
+        console.print(f"[green]Logged in[/green]")
+        console.print(f"  Email: {session.email}")
+        console.print(f"  User ID: {session.user_id}")
+    else:
+        console.print("[yellow]Not logged in[/yellow]")
 
 
 if __name__ == "__main__":

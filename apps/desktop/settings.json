@@ -1,7 +1,4 @@
 {
-  "provider": "deepseek",
-  "api_key": "sk-869671fbaff54a8c9dc144da86ce8502",
-  "model": "deepseek-chat",
   "stream": true,
   "max_tokens": 1024,
   "profile": {
@@ -13,5 +10,6 @@
     "interests": [],
     "price_sensitivity": "budget",
     "decision_factors": []
-  }
+  },
+  "instance_id": "b6820d86-662e-4919-b6af-77142ed26cb8"
 }

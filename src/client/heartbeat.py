@@ -24,7 +24,7 @@ class HeartbeatService:
     def stop(self):
         self._running = False
         if self._thread:
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=1)
         logger.info("Heartbeat service stopped")
 
     def _run(self):
