@@ -1,7 +1,15 @@
 [
   {
     "role": "user",
-    "content": "谁是小王"
+    "content": "你好"
+  },
+  {
+    "role": "assistant",
+    "content": ""
+  },
+  {
+    "role": "user",
+    "content": "好的"
   },
   {
     "role": "assistant",

@@ -1,15 +1,24 @@
-.worktrees
-worktrees
-node_modules/
-dist/
-.env
-*.log
-docs/plans/
+# OpenToad .gitignore
+
+# Database files
+*.db
+
+# IDE and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Python files
 __pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-venv/
-env/
-.venv/
+*.pyc
+
+# Environment files
+.env
+.env.local
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/

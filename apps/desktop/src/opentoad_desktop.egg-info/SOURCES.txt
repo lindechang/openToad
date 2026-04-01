@@ -1,0 +1,15 @@
+pyproject.toml
+src/__init__.py
+src/agent_wrapper.py
+src/main.py
+src/opentoad_desktop.egg-info/PKG-INFO
+src/opentoad_desktop.egg-info/SOURCES.txt
+src/opentoad_desktop.egg-info/dependency_links.txt
+src/opentoad_desktop.egg-info/entry_points.txt
+src/opentoad_desktop.egg-info/requires.txt
+src/opentoad_desktop.egg-info/top_level.txt
+src/ui/__init__.py
+src/ui/chat_panel.py
+src/ui/main_window.py
+src/ui/settings_dialog.py
+src/ui/tray.py
