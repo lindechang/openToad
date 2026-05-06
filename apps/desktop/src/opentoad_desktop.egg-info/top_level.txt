@@ -1,4 +1,5 @@
 __init__
 agent_wrapper
+debug_main
 main
 ui

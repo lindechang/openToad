@@ -16,20 +16,21 @@ except ImportError:
 
 class MemoryStorage:
     def __init__(self, db_path: Optional[str] = None, crypto: Optional["CryptoManager"] = None, user_id: Optional[str] = None, memory_id: Optional[str] = None):
-        home = Path.home()
+        # Use current directory instead of home directory to avoid permission issues
+        current_dir = Path(".")
         
         if db_path is None:
             if user_id:
                 if memory_id:
-                    self.db_path = home / ".opentoad" / f"memory_{user_id}_{memory_id}.db"
+                    self.db_path = current_dir / f"memory_{user_id}_{memory_id}.db"
                 else:
-                    user_mem = home / ".opentoad" / f"memory_{user_id}.db"
+                    user_mem = current_dir / f"memory_{user_id}.db"
                     if user_mem.exists():
                         self.db_path = user_mem
                     else:
-                        self.db_path = home / ".opentoad" / "memory.db"
+                        self.db_path = current_dir / "memory.db"
             else:
-                self.db_path = home / ".opentoad" / "memory.db"
+                self.db_path = current_dir / "memory.db"
         else:
             self.db_path = Path(db_path)
         

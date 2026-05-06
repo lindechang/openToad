@@ -12,6 +12,7 @@ class MessageType(str, Enum):
     PING = "ping"
     PONG = "pong"
     ERROR = "error"
+    A2A = "a2a"
 
 
 @dataclass
@@ -71,4 +72,11 @@ def create_error(code: str, message: str) -> WSMessage:
             "code": code,
             "message": message
         }
+    )
+
+
+def create_a2a_message(a2a_payload: dict) -> WSMessage:
+    return WSMessage(
+        type=MessageType.A2A.value,
+        payload=a2a_payload
     )

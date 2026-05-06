@@ -1,7 +1,11 @@
 __init__
 agent
+agent_network
+auth
 cli
 client
+crypto
+gateway
 memory
 profile
 providers

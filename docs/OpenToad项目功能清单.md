@@ -1,5 +1,33 @@
 # OpenToad 功能清单
 
+## 📋 功能概览
+
+| 模块 | 功能 | 状态 |
+|------|------|------|
+| **记忆体系统** | 多记忆体管理 | ✅ 已完成 |
+| | 记忆体加密 | ✅ 已完成 |
+| | 账号绑定记忆体 | ✅ 已完成 |
+| | 本地/在线记忆体 | ✅ 已完成 |
+| **LLM 配置** | 多模型支持 | ✅ 已完成 |
+| | API Key 管理 | ✅ 已完成 |
+| | 模型选择 | ✅ 已完成 |
+| **桌面应用** | PySide6 GUI | ✅ 已完成 |
+| | 会话管理 | ✅ 已完成 |
+| | 侧边栏导航 | ✅ 已完成 |
+| **账号系统** | 用户注册/登录 | ✅ 已完成 |
+| | 加密密钥派生 | ✅ 已完成 |
+| **Gateway** | WebSocket 服务 | ✅ 已完成 |
+| | 手机直连 | ✅ 已完成 |
+| **A2A 协作系统** | 角色与能力系统 | ✅ 已完成 |
+| | 任务系统 | ✅ 已完成 |
+| | 任务协调器 | ✅ 已完成 |
+| | Agent Network 面板 | ✅ 已完成 |
+| | 共享工作区 | ✅ 已完成 |
+| | 身份与凭证系统 | ✅ 已完成 |
+| | 自我进化系统 | ✅ 已完成 |
+
+---
+
 ## 一、客户端功能
 
 ### 1. 对话功能
@@ -64,6 +92,21 @@
 | 账号弹窗 | 登录/注册/登出 | ✅ |
 | 主题切换 | 浅色/深色主题 | ⏳ |
 | 关于页面 | 显示版本信息 | ✅ |
+
+### 7. Agent-to-Agent (A2A) 协作系统 ⭐
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 角色与能力系统 | 预定义 Coordinator/Worker/Researcher/Writer/Reviewer 角色 | ✅ |
+| Agent 发现 | 本地 Agent 注册中心，按角色查询 | ✅ |
+| 任务系统 | 创建任务、拆分子任务、状态管理 | ✅ |
+| 任务协调器 | 自动分配任务、收集结果、汇总 | ✅ |
+| A2A 协议 | Agent 间通讯消息格式 | ✅ |
+| Agent Network 面板 | 桌面 UI：查看 Agent 列表和任务状态 | ✅ |
+| 网络 Agent 发现 | 跨设备 Agent 发现与通讯 | ✅ |
+| 共享工作区 | 多 Agent 协作：笔记、文件、活动追踪 | ✅ |
+| 身份与凭证系统 | Agent 身份管理、信誉评分、凭证认证 | ✅ |
+| 自我进化系统 | 智能性能监控、自动优化、持续学习 | ✅ |
 
 ---
 
@@ -163,13 +206,52 @@
 | JSON | API 读取、跨模块调用 | ✅ |
 | Markdown | 可读记忆、版本控制 | ⏳ |
 
+#### 1.6 数据表结构
+
+```sql
+-- 记忆体元数据表
+CREATE TABLE memory_meta (
+    memory_id TEXT PRIMARY KEY,      -- UUID
+    name TEXT NOT NULL,              -- 记忆体名称
+    bound_user_id TEXT,              -- 绑定用户ID（NULL表示未绑定）
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- LLM 配置表
+CREATE TABLE llm_configs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider TEXT NOT NULL,          -- deepseek, openai, qianwen 等
+    api_key TEXT NOT NULL,           -- 加密存储
+    model TEXT NOT NULL,             -- 模型名称
+    temperature REAL DEFAULT 0.7,
+    max_tokens INTEGER,
+    created_at TIMESTAMP
+);
+```
+
 ### 2. 多模型支持
 
-| 类型 | 模型 | 状态 |
-|------|------|------|
-| 海外 | Claude, GPT, Gemini | ✅ |
-| 国内 | 文心一言, 通义千问, 混元, ChatGLM, Kimi, DeepSeek | ✅ |
-| 自部署 | Ollama, LocalAI, LM Studio, vLLM | ✅ |
+#### 支持的模型提供商
+
+| 类型 | 提供商 | 模型 |
+|------|--------|------|
+| 海外 | DeepSeek | deepseek-chat, deepseek-coder |
+| 海外 | OpenAI | GPT-4o, GPT-4o-mini, GPT-4 |
+| 海外 | Anthropic | Claude 3.5, Claude 3 |
+| 海外 | Google | Gemini |
+| 国内 | 通义千问 (Qianwen) | qwen-turbo, qwen-plus, qwen-max |
+| 国内 | 文心一言 | ernie-bot |
+| 国内 | 混元 | hunyuan |
+| 国内 | ChatGLM | chatglm3 |
+| 国内 | Kimi | moonshot-v1 |
+| 本地 | Ollama | 支持所有 Ollama 模型 |
+
+#### 配置方式
+
+- API Key 存储在记忆体数据库中（加密）
+- 不在 `settings.json` 中存储敏感信息
+- 支持温度、最大 token 等参数配置
 
 ### 3. Tool 系统
 
@@ -191,7 +273,58 @@
 
 ---
 
-## 四、部署形态
+## 四、桌面应用 (PySide6)
+
+### UI 布局
+
+```
+┌─────┬──────────┬─────────────────────────────────┐
+│ 65px│  180px   │                                 │
+│图标栏│ 会话列表  │         主聊天区域               │
+│     │          │                                 │
+│🔍   │🌰 记忆体  │                                 │
+│ +   │▼         │                                 │
+│     │─────────│                                 │
+│🤖   │+ 新建会话 │                                 │
+│⚙️   │─────────│                                 │
+│🔐   │会话      │                                 │
+│ℹ️   │ 当前会话  │                                 │
+│     │ 会话 2   │                                 │
+│     │ 会话 3   │                                 │
+└─────┴──────────┴─────────────────────────────────┘
+```
+
+### 功能模块
+
+| 模块 | 功能 |
+|------|------|
+| **图标栏** | 搜索、新建记忆体、LLM配置、设置、账号、关于、Agent Network |
+| **会话列表** | 多会话管理、右键删除、新建会话 |
+| **聊天区域** | 消息显示、输入框、流式响应 |
+| **记忆体选择** | 下拉切换当前记忆体 |
+
+---
+
+## 五、账号系统
+
+### 功能
+
+| 功能 | 说明 |
+|------|------|
+| **用户注册** | 邮箱 + 密码 + 昵称 |
+| **用户登录** | 邮箱 + 密码登录 |
+| **密钥派生** | PBKDF2 派生加密密钥 |
+| **记忆体绑定** | 登录后可绑定记忆体到账号 |
+
+### 安全特性
+
+- 密码使用 PBKDF2 + salt 哈希存储
+- API Key 使用 AES-256 加密
+- 加密密钥从用户密码派生，不明文存储
+
+---
+
+## 六、部署形态
 
 ### 1. 客户端分发
 
@@ -211,38 +344,76 @@
 
 ---
 
-## 五，开发计划
+## 七、开发计划
 
-### Phase 1: 记忆体核心 (进行中)
+### Phase 1: 记忆体核心 (✅ 已完成)
 
 - [x] MemoryCore 核心结构
 - [x] SQLite 存储层
 - [x] 基本的记忆存取
-- [ ] 身份系统集成
-- [ ] CLI 初始化命令
-- [ ] Agent 集成
 
-### Phase 2: 记忆管理
+### Phase 2: 记忆管理 (⏳ 进行中)
 
 - [ ] 遗忘机制
 - [ ] 升级机制
 - [ ] 记忆压缩
+- [ ] 身份系统集成
+- [ ] CLI 初始化命令
+- [ ] Agent 集成
 
-### Phase 3: 归档系统
+### Phase 3: Agent-to-Agent 协作系统 (✅ 已完成)
 
-- [ ] 项目记忆归档
-- [ ] 对话记忆归档
-- [ ] 归档索引管理
+- [x] 角色与能力系统
+- [x] 任务系统（创建/拆分/分配/汇总）
+- [x] 本地 Agent 发现与注册
+- [x] 任务协调器
+- [x] A2A 通讯协议
+- [x] Gateway 协议扩展
+- [x] Agent Network UI 面板
 
-### Phase 4: 增强功能
+### Phase 4: 网络协作 (✅ 已完成)
 
-- [ ] Markdown 可读化
-- [ ] 版本控制支持
-- [ ] 向量搜索（未来扩展）
+- [x] A2A Gateway 服务集成
+- [x] 网络 Agent 注册与发现
+- [x] 跨设备任务分配
+- [x] 分布式任务协调
+
+### Phase 5: 共享工作区 (✅ 已完成)
+
+- [x] 工作区创建与管理
+- [x] 参与者管理
+- [x] 协作笔记（添加/更新/删除/搜索）
+- [x] 文件共享（上传/删除/按类型查询）
+- [x] 活动时间线
+- [x] 工作区统计和摘要导出
+
+### Phase 6: 身份与凭证 (✅ 已完成)
+
+- [x] Agent 身份管理（创建/验证/哈希）
+- [x] 信誉评分系统（成功率/评分/响应时间）
+- [x] 信任等级划分
+- [x] 凭证颁发与验证
+- [x] 凭证撤销机制
+
+### Phase 7: 自我进化系统 (✅ 已完成)
+
+- [x] 性能监控和指标收集
+- [x] 智能瓶颈分析
+- [x] 自动进化提案生成
+- [x] 进化测试和部署流程
+- [x] 知识积累和学习
+- [x] 自动进化循环
+
+### Phase 8: 经济交互系统 (⏳ 未来)
+
+- [ ] 任务定价与支付
+- [ ] 微交易系统
+- [ ] 激励机制
+- [ ] 资源分配
 
 ---
 
-## 六，技术栈
+## 八、技术栈
 
 | 组件 | 技术 |
 |------|------|
@@ -254,3 +425,71 @@
 | LLM SDK | anthropic, openai |
 | 存储 | SQLite, JSON |
 | 数据库 | PostgreSQL + Redis (服务端) |
+| **Agent Network** | **src/agent_network/** (新增) |
+| **Agent Discovery** | LocalAgentRegistry, NetworkAgentDiscovery (新增) |
+| **Task Orchestration** | 任务协调器，支持任务拆分与结果汇总 (新增) |
+| **A2A Protocol** | 自定义 Agent 间通讯协议 (新增) |
+| **Evolution System** | 自我进化引擎 (新增) |
+
+---
+
+## 九、待开发功能
+
+- [ ] 记忆体云端同步
+- [ ] 记忆体导入/导出
+- [ ] 多设备登录
+- [ ] 记忆体分享功能
+- [ ] 插件系统
+- [ ] 任务计划执行
+- [ ] 经济交互系统
+
+---
+
+## 十、项目结构
+
+```
+OpenToad/
+├── src/
+│   ├── agent_network/          # A2A 协作系统
+│   │   ├── role.py            # 角色与能力系统
+│   │   ├── task.py            # 任务系统
+│   │   ├── discovery.py       # Agent 发现
+│   │   ├── orchestrator.py    # 任务协调器
+│   │   ├── protocol.py        # A2A 协议
+│   │   ├── a2a_handler.py     # 网络消息处理
+│   │   ├── a2a_gateway.py     # Gateway 集成
+│   │   ├── workspace.py       # 共享工作区
+│   │   └── evolution.py       # 自我进化系统
+│   ├── identity/              # 身份与凭证系统
+│   └── ...
+├── apps/
+│   └── desktop/               # 桌面应用
+├── docs/
+│   └── OpenToad项目功能清单.md  # 功能清单（本文件）
+└── demo_*.py                  # 演示脚本
+```
+
+---
+
+## 十一、已完成文件清单
+
+### 核心模块 (src/agent_network/)
+- `role.py` - 角色与能力系统
+- `task.py` - 任务系统
+- `discovery.py` - Agent 发现与注册
+- `orchestrator.py` - 任务协调器
+- `protocol.py` - A2A 通讯协议
+- `a2a_handler.py` - 网络消息处理
+- `a2a_gateway.py` - Gateway 集成服务
+- `workspace.py` - 共享工作区
+- `evolution.py` - 自我进化系统
+
+### 身份模块 (src/identity/)
+- `__init__.py` - 身份与凭证系统
+
+### 演示应用
+- `demo_full_app.py` - 完整功能演示应用
+- `demo_distributed_tasks.py` - 分布式任务分配演示
+- `demo_workspace.py` - 共享工作区演示
+- `demo_identity.py` - 身份与凭证系统演示
+- `demo_evolution.py` - 自我进化系统演示

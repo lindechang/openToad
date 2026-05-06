@@ -6,6 +6,10 @@ src/agent/__init__.py
 src/agent/prompt.py
 src/agent/run.py
 src/agent/types.py
+src/agent_network/__init__.py
+src/agent_network/role.py
+src/auth/__init__.py
+src/auth/service.py
 src/cli/__init__.py
 src/cli/main.py
 src/client/__init__.py
@@ -15,6 +19,14 @@ src/client/heartbeat.py
 src/client/http_client.py
 src/client/instance.py
 src/client/service.py
+src/crypto/__init__.py
+src/crypto/cipher.py
+src/gateway/__init__.py
+src/gateway/ai_handler.py
+src/gateway/config.py
+src/gateway/protocol.py
+src/gateway/server.py
+src/gateway/service.py
 src/memory/__init__.py
 src/memory/cli.py
 src/memory/core.py
