@@ -24,7 +24,7 @@ dev = [
 ]
 
 [project.scripts]
-opentoad = "cli.main:main"
+opentoad = "src.cli.main:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

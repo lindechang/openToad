@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenToad Web - AI 分身助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-primary: #00d4aa;
+            --accent-secondary: #00b894;
+            --accent-gradient: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --border-color: #2a2a35;
+            --shadow-glow: 0 0 30px rgba(0, 212, 170, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .nav-section {
+            padding: 15px 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .nav-item-text {
+            font-size: 14px;
+        }
+
+        .sessions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .session-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .session-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .session-item.active {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .session-icon {
+            font-size: 14px;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* 聊天区域 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .chat-header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent-gradient);
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--bg-tertiary);
+        }
+
+        .message-content {
+            max-width: 70%;
+            margin: 0 12px;
+        }
+
+        .message.user .message-content {
+            text-align: right;
+        }
+
+        .message-text {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message.user .message-text {
+            background: var(--accent-gradient);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-text {
+            background: var(--bg-secondary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* 输入区域 */
+        .input-container {
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            padding: 10px;
+            resize: none;
+            max-height: 120px;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--accent-gradient);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Agent Network 面板 */
+        .agent-panel {
+            display: none;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .agent-panel.active {
+            display: block;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .agent-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .agent-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .agent-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .agent-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .agent-info h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .agent-role {
+            font-size: 12px;
+            color: var(--accent-primary);
+        }
+
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .agent-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .agent-status-dot.online {
+            background: #00d4aa;
+        }
+
+        .agent-status-dot.offline {
+            background: #ff4757;
+        }
+
+        .agent-capabilities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .capability-tag {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* 任务列表 */
+        .tasks-section {
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-list {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .task-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s ease;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .task-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .task-status-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .task-status-icon.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .task-status-icon.in-progress {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+        }
+
+        .task-status-icon.completed {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .task-title {
+            font-size: 14px;
+        }
+
+        .task-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            min-width: 35px;
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            display: none;
+            flex: 1;
+            padding: 20px;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 14px;
+        }
+
+        .setting-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 26px;
+            background: var(--bg-tertiary);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-primary);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        /* 欢迎页面 */
+        .welcome-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .welcome-logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-action {
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .quick-action:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🐸 OpenToad</div>
+                <div class="logo-subtitle">AI 分身助手</div>
+            </div>
+
+            <nav class="nav-section">
+                <div class="nav-item active" data-panel="chat">
+                    <span class="nav-item-icon">💬</span>
+                    <span class="nav-item-text">聊天</span>
+                </div>
+                <div class="nav-item" data-panel="agents">
+                    <span class="nav-item-icon">🤖</span>
+                    <span class="nav-item-text">Agent Network</span>
+                </div>
+                <div class="nav-item" data-panel="settings">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span class="nav-item-text">设置</span>
+                </div>
+            </nav>
+
+            <div class="sessions-list">
+                <div class="session-item active">
+                    <span class="session-icon">📝</span>
+                    <span>当前会话</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-icon">📝</span>
+                    <span>项目研究</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-icon">📝</span>
+                    <span>代码开发</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 聊天面板 -->
+            <div class="chat-container" id="chat-panel">
+                <div class="chat-header">
+                    <div class="chat-title">当前会话</div>
+                    <div class="chat-status">
+                        <span class="status-dot"></span>
+                        <span>在线</span>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messages">
+                    <div class="welcome-page" id="welcome-page">
+                        <div class="welcome-logo">🐸</div>
+                        <div class="welcome-title">OpenToad AI 分身助手</div>
+                        <div class="welcome-subtitle">我可以帮你完成各种任务，与其他 Agent 协作</div>
+                        <div class="quick-actions">
+                            <div class="quick-action" onclick="sendQuickMessage('帮我研究一下最新的 AI 技术')">🔍 研究 AI 技术</div>
+                            <div class="quick-action" onclick="sendQuickMessage('帮我写一个 Python 爬虫')">💻 写爬虫代码</div>
+                            <div class="quick-action" onclick="sendQuickMessage('解释一下什么是 Agent-to-Agent')">🤖 A2A 协作</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea class="chat-input" id="message-input" placeholder="输入消息..." rows="1"></textarea>
+                        <button class="send-button" id="send-btn" onclick="sendMessage()">
+                            <span>➤</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Network 面板 -->
+            <div class="agent-panel" id="agent-panel">
+                <div class="panel-header">
+                    <div class="panel-title">🤖 Agent Network</div>
+                </div>
+
+                <div class="agents-grid" id="agents-grid">
+                    <!-- 动态生成 -->
+                </div>
+
+                <div class="tasks-section">
+                    <div class="section-title">📋 任务列表</div>
+                    <div class="task-list" id="tasks-list">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置面板 -->
+            <div class="settings-panel" id="settings-panel">
+                <div class="panel-header">
+                    <div class="panel-title">⚙️ 设置</div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">🔐 账户</div>
+                    <div class="setting-item">
+                        <div>
+                            <div class="setting-label">登录状态</div>
+                            <div class="setting-desc">未登录</div>
+                        </div>
+                        <div class="toggle-switch"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">🎨 外观</div>
+                    <div class="setting-item">
+                        <div>
+                            <div class="setting-label">深色主题</div>
+                            <div class="setting-desc">使用深色配色方案</div>
+                        </div>
+                        <div class="toggle-switch active"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div>
+                            <div class="setting-label">流式输出</div>
+                            <div class="setting-desc">实时显示 AI 回复</div>
+                        </div>
+                        <div class="toggle-switch active"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">🤖 Agent 设置</div>
+                    <div class="setting-item">
+                        <div>
+                            <div class="setting-label">自动启动 Agent</div>
+                            <div class="setting-desc">启动时自动初始化 Agent</div>
+                        </div>
+                        <div class="toggle-switch active"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div>
+                            <div class="setting-label">协作模式</div>
+                            <div class="setting-desc">允许多 Agent 协作</div>
+                        </div>
+                        <div class="toggle-switch active"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态管理
+        let currentPanel = 'chat';
+        let messages = [];
+        let agents = [];
+        let tasks = [];
+
+        // API 基础地址
+        const API_BASE = 'http://localhost:8000';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initChatInput();
+            loadAgents();
+            loadTasks();
+        });
+
+        // 导航切换
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const panel = item.dataset.panel;
+                    switchPanel(panel);
+                });
+            });
+        }
+
+        function switchPanel(panel) {
+            // 更新导航状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.panel === panel);
+            });
+
+            // 切换面板
+            document.getElementById('chat-panel').style.display = panel === 'chat' ? 'flex' : 'none';
+            document.getElementById('agent-panel').classList.toggle('active', panel === 'agents');
+            document.getElementById('settings-panel').classList.toggle('active', panel === 'settings');
+
+            currentPanel = panel;
+        }
+
+        // 聊天功能
+        function initChatInput() {
+            const input = document.getElementById('message-input');
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            input.addEventListener('input', () => {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // 清空输入框
+            input.value = '';
+            input.style.height = 'auto';
+
+            // 隐藏欢迎页面
+            document.getElementById('welcome-page').style.display = 'none';
+
+            // 添加用户消息
+            addMessage('user', message);
+
+            // 禁用发送按钮
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+
+            try {
+                // 发送请求
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, stream: true })
+                });
+
+                const data = await response.json();
+
+                // 添加 AI 消息
+                addMessage('assistant', data.response.content);
+            } catch (error) {
+                // 离线模式：模拟响应
+                const responses = [
+                    `我收到了你的消息："${message}"\n\n作为 OpenToad AI 分身，我可以帮你完成各种任务。`,
+                    `好的，我理解你的需求。让我帮你处理这个问题...\n\n你可以尝试使用 Agent Network 功能与其他 Agent 协作。`,
+                    `这是一个有趣的问题！让我来分析一下...\n\n如果你需要多 Agent 协作，可以打开 Agent Network 面板。`
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addMessage('assistant', randomResponse);
+            }
+
+            // 启用发送按钮
+            sendBtn.disabled = false;
+        }
+
+        function addMessage(role, content) {
+            const messagesContainer = document.getElementById('messages');
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+            messageEl.innerHTML = `
+                <div class="message-avatar">${role === 'user' ? '👤' : '🐸'}</div>
+                <div class="message-content">
+                    <div class="message-text">${content.replace(/\n/g, '<br>')}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageEl);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            messages.push({ role, content, time });
+        }
+
+        function sendQuickMessage(message) {
+            document.getElementById('message-input').value = message;
+            sendMessage();
+        }
+
+        // Agent Network
+        async function loadAgents() {
+            try {
+                const response = await fetch(`${API_BASE}/api/agents`);
+                const data = await response.json();
+                agents = data.agents;
+                renderAgents();
+            } catch (error) {
+                // 离线模式：使用默认数据
+                agents = [
+                    { agent_id: 'agent-1', name: 'Coordinator Agent', role: 'COORDINATOR', status: 'online', capabilities: ['task_assignment', 'result_aggregation'] },
+                    { agent_id: 'agent-2', name: 'Worker Agent 1', role: 'WORKER', status: 'online', capabilities: ['task_execution'] },
+                    { agent_id: 'agent-3', name: 'Researcher Agent', role: 'RESEARCHER', status: 'online', capabilities: ['research', 'analysis'] },
+                    { agent_id: 'agent-4', name: 'Writer Agent', role: 'WRITER', status: 'offline', capabilities: ['writing', 'documentation'] }
+                ];
+                renderAgents();
+            }
+        }
+
+        function renderAgents() {
+            const grid = document.getElementById('agents-grid');
+            grid.innerHTML = agents.map(agent => `
+                <div class="agent-card">
+                    <div class="agent-card-header">
+                        <div class="agent-avatar">${getRoleIcon(agent.role)}</div>
+                        <div class="agent-info">
+                            <h3>${agent.name}</h3>
+                            <div class="agent-role">${agent.role}</div>
+                        </div>
+                    </div>
+                    <div class="agent-status">
+                        <span class="agent-status-dot ${agent.status}"></span>
+                        <span>${agent.status === 'online' ? '在线' : '离线'}</span>
+                    </div>
+                    <div class="agent-capabilities">
+                        ${agent.capabilities.map(c => `<span class="capability-tag">${c}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getRoleIcon(role) {
+            const icons = {
+                'COORDINATOR': '🎯',
+                'WORKER': '⚙️',
+                'RESEARCHER': '🔍',
+                'WRITER': '✍️',
+                'REVIEWER': '👁️'
+            };
+            return icons[role] || '🤖';
+        }
+
+        // 任务列表
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tasks`);
+                const data = await response.json();
+                tasks = data.tasks;
+                renderTasks();
+            } catch (error) {
+                // 离线模式：使用默认数据
+                tasks = [
+                    { task_id: 'task-1', title: '研究 AI Agent 技术', status: 'in_progress', progress: 65 },
+                    { task_id: 'task-2', title: '编写项目文档', status: 'pending', progress: 0 },
+                    { task_id: 'task-3', title: '代码审查', status: 'completed', progress: 100 }
+                ];
+                renderTasks();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('tasks-list');
+            list.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-info">
+                        <div class="task-status-icon ${task.status}">${getStatusIcon(task.status)}</div>
+                        <div class="task-title">${task.title}</div>
+                    </div>
+                    <div class="task-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${task.progress}%"></div>
+                        </div>
+                        <span class="progress-text">${task.progress}%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'pending': '⏳',
+                'in_progress': '🔄',
+                'completed': '✅'
+            };
+            return icons[status] || '📋';
+        }
+    </script>
+</body>
+</html>
