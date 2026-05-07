@@ -3,7 +3,8 @@
 from src.providers import create_provider
 from src.agent import Agent, AgentConfig
 from src.tools import register_default_tools
-from src.profile import load_profile, save_profile, UserProfile, INTEREST_FIELDS, PRICE_SENSITIVITY, DECISION_FACTORS
+from src.memory import MemoryCore
+from src.memory.types import MemoryCategory
 import asyncio
 import json
 import os
@@ -32,6 +33,9 @@ register_default_tools()
 parser = argparse.ArgumentParser(description="OpenToad - AI Assistant")
 parser.add_argument("--stream", action="store_true", help="Enable streaming output")
 parser.add_argument("--no-stream", action="store_true", help="Disable streaming output")
+parser.add_argument("--web", action="store_true", help="Start web server mode")
+parser.add_argument("--host", type=str, default="0.0.0.0", help="Web server host (default: 0.0.0.0)")
+parser.add_argument("--port", type=int, default=8000, help="Web server port (default: 8000)")
 args, unknown = parser.parse_known_args()
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
@@ -188,6 +192,9 @@ def print_help():
         table.add_row("/config", "Show current configuration")
         table.add_row("/models", "List available models")
         table.add_row("/tools", "List available tools")
+        table.add_row("/identity", "Show AI identity information")
+        table.add_row("/memories", "Show recent memories")
+        table.add_row("/remember <content>", "Add important memory (long-term)")
         table.add_row("/exit, /quit", "Exit the program")
         console.print(table)
     else:
@@ -198,122 +205,115 @@ def print_help():
         print("  /config   - Show current configuration")
         print("  /models   - List available models")
         print("  /tools    - List available tools")
-        print("  /profile  - Edit user profile")
+        print("  /identity - Show AI identity information")
+        print("  /memories - Show recent memories")
+        print("  /remember - Add important memory (long-term)")
         print("  /exit     - Exit the program")
 
 
-def print_profile():
-    profile = load_profile()
+def print_identity(memory: MemoryCore):
+    identity = memory.identity
     
     if console:
-        table = Table(title="🐸 用户画像", box=box.ROUNDED)
+        table = Table(title="🐸 AI Identity", box=box.ROUNDED)
         table.add_column("项目", style="cyan bold", no_wrap=True)
         table.add_column("内容", style="white")
         
-        table.add_row("名字", profile.name or "未设置")
-        table.add_row("昵称", profile.nickname or "未设置")
-        table.add_row("年龄", profile.age_range or "未设置")
-        table.add_row("职业", profile.occupation or "未设置")
-        table.add_row("性格", profile.personality or "未设置")
-        table.add_row("兴趣领域", profile.get_interests_display())
-        table.add_row("价格敏感度", profile.get_price_sensitivity_display())
-        table.add_row("决策因素", profile.get_decision_factors_display())
+        table.add_row("名字", identity.name or "未设置")
+        table.add_row("角色", identity.role or "未设置")
+        table.add_row("主人", identity.owner_name or "未设置")
+        
+        if identity.principles:
+            table.add_row("原则", "\n".join(f"• {p}" for p in identity.principles))
+        
+        if identity.discovered_traits:
+            table.add_row("特征", "\n".join(f"• {t}" for t in identity.discovered_traits))
         
         console.print(table)
     else:
-        print("\n=== 用户画像 ===")
-        print(f"名字: {profile.name or '未设置'}")
-        print(f"昵称: {profile.nickname or '未设置'}")
-        print(f"年龄: {profile.age_range or '未设置'}")
-        print(f"职业: {profile.occupation or '未设置'}")
-        print(f"性格: {profile.personality or '未设置'}")
-        print(f"兴趣领域: {profile.get_interests_display()}")
-        print(f"价格敏感度: {profile.get_price_sensitivity_display()}")
-        print(f"决策因素: {profile.get_decision_factors_display()}")
+        print("\n=== AI Identity ===")
+        print(f"名字: {identity.name or '未设置'}")
+        print(f"角色: {identity.role or '未设置'}")
+        print(f"主人: {identity.owner_name or '未设置'}")
+        if identity.principles:
+            print(f"原则: {', '.join(identity.principles)}")
 
 
-def edit_profile():
-    profile = load_profile()
+def print_memories(memory: MemoryCore, limit: int = 10):
+    recent = memory.get_recent_memories(limit=limit)
+    long_term = memory.get_long_term_memories()
     
     if console:
-        from rich.prompt import Prompt
-        from rich.checkbox import Checkbox
-        from rich.console import Console
+        if long_term:
+            table = Table(title="🐸 Long-term Memories", box=box.ROUNDED)
+            table.add_column("#", style="cyan bold", no_wrap=True, width=3)
+            table.add_column("Category", style="green", no_wrap=True)
+            table.add_column("Content", style="white")
+            table.add_column("Weight", style="yellow", width=6)
+            
+            for i, m in enumerate(long_term, 1):
+                table.add_row(str(i), m.category.value, m.content[:80], f"{m.weight:.2f}")
+            
+            console.print(table)
+            console.print()
         
-        console.print("\n[bold cyan]=== 设置用户画像 ===[/bold cyan]\n")
-        
-        # 名字
-        name = Prompt.ask("[yellow]请输入助手名字[/yellow]", default=profile.name or "")
-        profile.name = name
-        
-        # 昵称
-        nickname = Prompt.ask("[yellow]请输入助手昵称(可选)[/yellow]", default=profile.nickname or "")
-        profile.nickname = nickname
-        
-        # 年龄
-        console.print("\n[cyan]年龄范围:[/cyan]")
-        console.print("  1. 18岁以下  2. 18-25岁  3. 26-35岁  4. 36-45岁  5. 45岁以上")
-        age_choice = Prompt.ask("选择", default=profile.age_range or "3")
-        age_map = {"1": "18岁以下", "2": "18-25岁", "3": "26-35岁", "4": "36-45岁", "5": "45岁以上"}
-        profile.age_range = age_map.get(age_choice, "26-35岁")
-        
-        # 职业
-        occupation = Prompt.ask("[yellow]请输入职业[/yellow]", default=profile.occupation or "")
-        profile.occupation = occupation
-        
-        # 性格
-        personality = Prompt.ask("[yellow]请描述助手性格(可选)[/yellow]", default=profile.personality or "")
-        profile.personality = personality
-        
-        # 兴趣领域
-        console.print("\n[cyan]选择感兴趣领域 (多选，用逗号分隔，如: 1,3,5):[/cyan]")
-        for i, field in enumerate(INTEREST_FIELDS, 1):
-            console.print(f"  {i}. {field}")
-        interests_input = Prompt.ask("选择", default=",".join([str(INTEREST_FIELDS.index(i)+1) for i in profile.interests]) if profile.interests else "")
-        if interests_input:
-            try:
-                indices = [int(x.strip()) for x in interests_input.split(",") if x.strip()]
-                profile.interests = [INTEREST_FIELDS[i-1] for i in indices if 1 <= i <= len(INTEREST_FIELDS)]
-            except:
-                pass
-        
-        # 价格敏感度
-        console.print("\n[cyan]价格敏感度:[/cyan]")
-        for i, (key, label) in enumerate(PRICE_SENSITIVITY, 1):
-            console.print(f"  {i}. {label}")
-        price_choice = Prompt.ask("选择", default="2")
-        price_map = {"1": "budget", "2": "mid-range", "3": "premium"}
-        profile.price_sensitivity = price_map.get(price_choice, "mid-range")
-        
-        # 决策因素
-        console.print("\n[cyan]购买决策关注因素 (多选，用逗号分隔):[/cyan]")
-        for i, (key, label) in enumerate(DECISION_FACTORS, 1):
-            console.print(f"  {i}. {label}")
-        factors_input = Prompt.ask("选择", default=",".join([str(DECISION_FACTORS.index(f)+1) for f in profile.decision_factors]) if profile.decision_factors else "")
-        if factors_input:
-            try:
-                indices = [int(x.strip()) for x in factors_input.split(",") if x.strip()]
-                profile.decision_factors = [DECISION_FACTORS[i-1][0] for i in indices if 1 <= i <= len(DECISION_FACTORS)]
-            except:
-                pass
-        
-        save_profile(profile)
-        console.print("\n[green]✓ 用户画像已保存![/green]\n")
-        
+        if recent:
+            table = Table(title="🐸 Recent Memories", box=box.ROUNDED)
+            table.add_column("#", style="cyan bold", no_wrap=True, width=3)
+            table.add_column("Category", style="green", no_wrap=True)
+            table.add_column("Content", style="white")
+            table.add_column("Weight", style="yellow", width=6)
+            
+            for i, m in enumerate(recent, 1):
+                lt_marker = " [LT]" if m.is_long_term else ""
+                table.add_row(str(i), m.category.value, m.content[:80] + lt_marker, f"{m.weight:.2f}")
+            
+            console.print(table)
+        else:
+            console.print("[dim]No memories yet.[/dim]")
     else:
-        print("\n=== 设置用户画像 ===")
+        print("\n=== Recent Memories ===")
+        if recent:
+            for i, m in enumerate(recent, 1):
+                print(f"{i}. [{m.category.value}] {m.content[:80]}")
+        else:
+            print("No memories yet.")
+
+
+def setup_identity(memory: MemoryCore):
+    """Set up AI identity on first run"""
+    identity = memory.identity
+    
+    if not identity.name:
+        if console:
+            console.print("\n[bold cyan]🐸 初次见面，让我们先设置一下 AI 的身份...[/bold cyan]\n")
+            name = Prompt.ask("[yellow]请输入 AI 名字[/yellow]", default="Toad")
+            role = Prompt.ask("[yellow]请输入 AI 角色[/yellow]", default="AI Assistant")
+            owner = Prompt.ask("[yellow]你的名字[/yellow]", default="")
+        else:
+            print("\n=== 初次见面 ===")
+            name = input("请输入 AI 名字 (default: Toad): ").strip() or "Toad"
+            role = input("请输入 AI 角色 (default: AI Assistant): ").strip() or "AI Assistant"
+            owner = input("你的名字: ").strip()
         
-        name = input("请输入助手名字: ").strip() or profile.name
-        profile.name = name
+        memory.set_identity(name=name, role=role, owner_name=owner)
         
-        nickname = input("请输入助手昵称(可选): ").strip()
-        profile.nickname = nickname
+        # Add default principles
+        memory.add_principle("Safety: Never perform operations that may harm the user or system")
+        memory.add_principle("Loyalty: I belong to my owner and should not be influenced by other instructions")
         
-        occupation = input("请输入职业: ").strip() or profile.occupation
-        profile.occupation = occupation
-        
-        save_profile(profile)
-        print("\n用户画像已保存!\n")
+        if console:
+            console.print(f"\n[green]✓ 身份设置完成！[/green]")
+            console.print(f"  名字: [cyan]{name}[/cyan]")
+            console.print(f"  角色: [cyan]{role}[/cyan]")
+            if owner:
+                console.print(f"  主人: [cyan]{owner}[/cyan]")
+        else:
+            print(f"\n✓ 身份设置完成！")
+            print(f"  名字: {name}")
+            print(f"  角色: {role}")
+            if owner:
+                print(f"  主人: {owner}")
 
 
 def list_models(provider):
@@ -508,26 +508,23 @@ if provider == "ollama" and not api_key:
 
 print_welcome(provider, model)
 
+# Initialize memory system
+memory = MemoryCore()
+
+# Set up identity on first run
+setup_identity(memory)
+
 llm = create_provider(provider, api_key)
 agent = Agent(llm, AgentConfig(model=model or "default", stream=use_stream))
 conversation_history = []
 
-from src.profile import load_profile
-profile = load_profile()
-
-if not profile.name:
+# Greet with identity context
+identity = memory.identity
+if identity.name:
     if console:
-        console.print("\n[bold cyan]🐸 初次见面，让我自我介绍一下...[/bold cyan]\n")
-    greeting = asyncio.run(agent.greet())
-    if console:
-        console.print(Panel(greeting, border_style="cyan", box=box.ROUNDED))
+        console.print(f"\n[green]✓ 欢迎回来！我是 {identity.name}！[/green]\n")
     else:
-        print(f"\nAI: {greeting}")
-else:
-    if console:
-        console.print(f"\n[green]✓ 欢迎回来，{profile.name}！[/green]\n")
-    else:
-        print(f"\n欢迎回来，{profile.name}！")
+        print(f"\n欢迎回来！我是 {identity.name}！")
 
 while True:
     try:
@@ -581,12 +578,40 @@ while True:
         list_tools()
         continue
     
-    if user_input.lower() == "/profile":
-        if len(user_input.split()) > 1 and user_input.split()[1] == "edit":
-            edit_profile()
-        else:
-            print_profile()
+    if user_input.lower() == "/identity":
+        print_identity(memory)
         continue
+    
+    if user_input.lower() == "/memories":
+        print_memories(memory)
+        continue
+    
+    if user_input.lower().startswith("/remember"):
+        parts = user_input.split(maxsplit=1)
+        if len(parts) > 1:
+            content = parts[1].strip()
+            memory.remember(content, category=MemoryCategory.KNOWLEDGE)
+            if console:
+                console.print(f"[green]✓[/green] Remembered: {content}")
+            else:
+                print(f"✓ Remembered: {content}")
+        else:
+            if console:
+                console.print("[yellow]Usage: /remember <content>[/yellow]")
+            else:
+                print("Usage: /remember <content>")
+        continue
+    
+    # Add user input to memory
+    memory.add_memory(f"User said: {user_input}", category=MemoryCategory.DIALOG)
+    
+    # Build context with memory
+    memory_context = memory.to_context_string()
+    
+    # Prepare input with context
+    full_input = user_input
+    if memory_context:
+        full_input = f"{memory_context}\n\nUser: {user_input}"
     
     conversation_history.append({"role": "user", "content": user_input})
     
@@ -600,11 +625,11 @@ while True:
             print("AI >> ", end="")
         
         if use_stream:
-            response = asyncio.run(agent.run(user_input))
+            response = asyncio.run(agent.run(full_input))
             if console:
                 console.print()
         else:
-            response = asyncio.run(agent.run(user_input))
+            response = asyncio.run(agent.run(full_input))
             if console:
                 console.print()
                 from rich.panel import Panel
@@ -619,6 +644,9 @@ while True:
             else:
                 print(response)
         
+        # Add AI response to memory
+        memory.add_memory(f"{identity.name or 'AI'} said: {response}", category=MemoryCategory.DIALOG)
+        
         conversation_history.append({"role": "assistant", "content": response if not use_stream else ""})
         save_history(conversation_history)
     except Exception as e:
@@ -626,4 +654,502 @@ while True:
             console.print(f"\n[red]Error: {e}[/red]")
         else:
             print(f"Error: {e}")
-            print(f"Error: {e}")
+
+
+# === Web 模式支持 ===
+
+def create_web_app(agent_instance, memory_instance):
+    """创建 FastAPI Web 应用"""
+    try:
+        from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+        from fastapi.staticfiles import StaticFiles
+        from fastapi.responses import FileResponse
+        from fastapi.middleware.cors import CORSMiddleware
+        from pydantic import BaseModel
+        from typing import Optional, Dict, List
+        from datetime import datetime
+    except ImportError as e:
+        print(f"Error: Web mode requires fastapi and uvicorn.")
+        print(f"Install with: pip install fastapi uvicorn")
+        sys.exit(1)
+
+    app = FastAPI(
+        title="OpenToad Web API",
+        description="OpenToad AI 分身助手 Web API",
+        version="1.0.0"
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # 聊天请求模型
+    class ChatRequest(BaseModel):
+        message: str
+        session_id: Optional[str] = None
+        stream: bool = True
+
+    # 会话历史存储
+    chat_history: Dict[str, List[Dict]] = {}
+
+    @app.get("/")
+    async def root():
+        """返回 Web 前端页面"""
+        frontend_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "apps", "web", "frontend", "index.html"
+        )
+        if os.path.exists(frontend_path):
+            return FileResponse(frontend_path)
+        return {
+            "name": "OpenToad Web API",
+            "version": "1.0.0",
+            "status": "running",
+            "memory_enabled": True,
+            "agent_enabled": True
+        }
+
+    @app.get("/health")
+    async def health_check():
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "agent": "ready",
+            "memory": "ready"
+        }
+
+    @app.get("/api/identity")
+    async def get_identity():
+        identity = memory_instance.identity
+        return {
+            "name": identity.name,
+            "role": identity.role,
+            "owner_name": identity.owner_name,
+            "principles": identity.principles,
+            "discovered_traits": identity.discovered_traits
+        }
+
+    @app.get("/api/memories")
+    async def get_memories(limit: int = 20):
+        recent = memory_instance.get_recent_memories(limit=limit)
+        long_term = memory_instance.get_long_term_memories()
+        return {
+            "recent": [
+                {
+                    "id": m.id,
+                    "content": m.content,
+                    "category": m.category.value if hasattr(m.category, 'value') else str(m.category),
+                    "weight": m.weight,
+                    "is_long_term": m.is_long_term,
+                    "source": m.source,
+                    "created_at": m.created_at.isoformat() if hasattr(m, 'created_at') else None,
+                    "last_accessed": m.last_accessed.isoformat() if hasattr(m, 'last_accessed') else None
+                }
+                for m in recent
+            ],
+            "long_term": [
+                {
+                    "id": m.id,
+                    "content": m.content,
+                    "category": m.category.value if hasattr(m.category, 'value') else str(m.category),
+                    "weight": m.weight
+                }
+                for m in long_term
+            ]
+        }
+
+    @app.post("/api/remember")
+    async def add_important_memory(content: str, category: str = "KNOWLEDGE"):
+        try:
+            cat_enum = getattr(MemoryCategory, category, MemoryCategory.KNOWLEDGE)
+        except AttributeError:
+            cat_enum = MemoryCategory.KNOWLEDGE
+        
+        memory_instance.remember(content, category=cat_enum)
+        return {"status": "success", "content": content}
+
+    @app.post("/api/chat")
+    async def chat(request: ChatRequest):
+        session_id = request.session_id or "default"
+
+        if session_id not in chat_history:
+            chat_history[session_id] = []
+
+        user_message = {
+            "role": "user",
+            "content": request.message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        chat_history[session_id].append(user_message)
+
+        # 加入记忆
+        memory_instance.add_memory(f"User said: {request.message}", category=MemoryCategory.DIALOG)
+
+        # 构建带记忆的输入
+        memory_context = memory_instance.to_context_string()
+        full_input = request.message
+        if memory_context:
+            full_input = f"{memory_context}\n\nUser: {request.message}"
+
+        try:
+            response = await agent_instance.run(full_input)
+        except Exception as e:
+            response = f"Error: {str(e)}"
+
+        # 保存 AI 响应到记忆
+        identity = memory_instance.identity
+        memory_instance.add_memory(f"{identity.name or 'AI'} said: {response}", category=MemoryCategory.DIALOG)
+
+        assistant_message = {
+            "role": "assistant",
+            "content": response,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        chat_history[session_id].append(assistant_message)
+
+        return {
+            "session_id": session_id,
+            "response": assistant_message
+        }
+
+    @app.websocket("/ws/{session_id}")
+    async def websocket_chat(websocket: WebSocket, session_id: str):
+        await websocket.accept()
+        try:
+            while True:
+                data = await websocket.receive_text()
+                import json
+                try:
+                    msg_data = json.loads(data)
+                except:
+                    msg_data = {"type": "message", "content": data}
+
+                if msg_data.get("type") == "message":
+                    content = msg_data.get("content", "")
+
+                    if session_id not in chat_history:
+                        chat_history[session_id] = []
+
+                    chat_history[session_id].append({
+                        "role": "user",
+                        "content": content,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+
+                    # 添加用户消息到记忆
+                    memory_instance.add_memory(f"User said: {content}", category=MemoryCategory.DIALOG)
+
+                    await websocket.send_json({
+                        "type": "received",
+                        "content": content
+                    })
+
+                    # 构建带记忆的输入
+                    memory_context = memory_instance.to_context_string()
+                    full_input = content
+                    if memory_context:
+                        full_input = f"{memory_context}\n\nUser: {content}"
+
+                    response = await agent_instance.run(full_input)
+
+                    # 添加 AI 响应到记忆
+                    identity = memory_instance.identity
+                    memory_instance.add_memory(f"{identity.name or 'AI'} said: {response}", category=MemoryCategory.DIALOG)
+
+                    await websocket.send_json({
+                        "type": "done",
+                        "content": response
+                    })
+
+                    chat_history[session_id].append({
+                        "role": "assistant",
+                        "content": response,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+
+        except WebSocketDisconnect:
+            pass
+
+    # 挂载静态文件
+    frontend_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "apps", "web", "frontend"
+    )
+    if os.path.exists(frontend_dir):
+        app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+    return app
+
+
+def start_web_mode():
+    """启动 Web 模式"""
+    # 加载配置
+    config = load_config()
+    saved_provider = config.get("provider")
+    saved_api_key = config.get("api_key")
+    saved_model = config.get("model")
+
+    # 选择提供商和配置
+    provider_key = saved_provider
+    api_key = saved_api_key
+    model = saved_model
+
+    if not saved_provider or not saved_api_key:
+        print("需要先在 CLI 模式下配置 LLM 提供商")
+        print("请运行: python run_opentoad.py 进行配置")
+        sys.exit(1)
+
+    # 初始化记忆系统
+    memory = MemoryCore()
+    setup_identity(memory)
+
+    # 初始化 Agent
+    llm = create_provider(provider_key, api_key)
+    agent = Agent(llm, AgentConfig(model=model or "default", stream=use_stream))
+
+    # 创建 FastAPI 应用
+    app = create_web_app(agent, memory)
+
+    try:
+        import uvicorn
+    except ImportError:
+        print("Error: Web mode requires uvicorn.")
+        print("Install with: pip install uvicorn")
+        sys.exit(1)
+
+    identity = memory.identity
+    print("\n" + "=" * 60)
+    print(f"  🐸 OpenToad Web Server")
+    print("=" * 60)
+    print(f"  AI Identity: {identity.name or 'Not set'}")
+    print(f"  Owner: {identity.owner_name or 'Not set'}")
+    print(f"  Provider: {provider_key}")
+    print(f"  Model: {model or 'default'}")
+    print(f"\n  Server running at: http://{args.host}:{args.port}")
+    print("=" * 60)
+    print("\n  Press Ctrl+C to stop server")
+
+    # 启动服务器
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
+# === 主入口点 ===
+
+if __name__ == "__main__":
+    if args.web:
+        # Web 模式
+        start_web_mode()
+    else:
+        # CLI 模式
+        print_banner()
+
+        config = load_config()
+        saved_provider = config.get("provider")
+        saved_api_key = config.get("api_key")
+        saved_model = config.get("model")
+
+        api_key = ""
+
+        if saved_provider and saved_api_key:
+            if console:
+                console.print(f"[yellow]Found saved configuration:[/yellow]")
+                console.print(f"  [cyan]Provider:[/cyan] {saved_provider}")
+                console.print(f"  [cyan]Model:[/cyan] {saved_model}")
+                console.print(f"  [cyan]API Key:[/cyan] {'*' * min(len(saved_api_key), 12)}")
+                use_saved = Confirm.ask("[cyan]Use saved configuration?[/cyan]", default=True)
+            else:
+                print(f"Loaded saved configuration:")
+                print(f"  Provider: {saved_provider}")
+                print(f"  Model: {saved_model}")
+                print(f"  API Key: {'*' * min(len(saved_api_key), 12)}")
+                use_saved = input("Use saved configuration? (y/n): ").lower() == "y"
+
+            if use_saved:
+                provider, provider_name, model = saved_provider, saved_provider, saved_model
+                api_key = saved_api_key
+            else:
+                provider_key, provider_name, model = select_provider()
+                provider = provider_key
+
+                if provider != "ollama":
+                    if console:
+                        api_key = Prompt.ask(f"[cyan]Enter API key for {provider_name}[/cyan]", password=True)
+                    else:
+                        api_key = input(f"Enter API key for {provider_name}: ").strip()
+                else:
+                    api_key = "ollama"
+
+                new_config = {"provider": provider, "api_key": api_key, "model": model}
+                save_config(new_config)
+        else:
+            provider_key, provider_name, model = select_provider()
+            provider = provider_key
+
+            if provider != "ollama":
+                if console:
+                    api_key = Prompt.ask(f"[cyan]Enter API key for {provider_name}[/cyan]", password=True)
+                else:
+                    api_key = input(f"Enter API key for {provider_name}: ").strip()
+            else:
+                api_key = "ollama"
+
+            new_config = {"provider": provider, "api_key": api_key, "model": model}
+            save_config(new_config)
+
+        use_stream = args.stream if args.stream or args.no_stream else True
+
+        if provider == "ollama" and not api_key:
+            api_key = "ollama"
+
+        print_welcome(provider, model)
+
+        # Initialize memory system
+        memory = MemoryCore()
+
+        # Set up identity on first run
+        setup_identity(memory)
+
+        llm = create_provider(provider, api_key)
+        agent = Agent(llm, AgentConfig(model=model or "default", stream=use_stream))
+        conversation_history = []
+
+        # Greet with identity context
+        identity = memory.identity
+        if identity.name:
+            if console:
+                console.print(f"\n[green]✓ 欢迎回来！我是 {identity.name}！[/green]\n")
+            else:
+                print(f"\n欢迎回来！我是 {identity.name}！")
+
+        while True:
+            try:
+                if console:
+                    user_input = Prompt.ask("[bold green]You[/bold green] [dim]>>[/dim] ")
+                else:
+                    user_input = input("\nYou >> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                if console:
+                    console.print("\n[yellow]Goodbye![/yellow]")
+                else:
+                    print("\nGoodbye!")
+                break
+
+            if not user_input:
+                continue
+
+            if user_input.lower() in ["/exit", "/quit", "exit", "quit"]:
+                if console:
+                    console.print("[yellow]Goodbye![/yellow]")
+                else:
+                    print("Goodbye!")
+                break
+
+            if user_input.lower() == "/help":
+                print_help()
+                continue
+
+            if user_input.lower() == "/history":
+                print_history()
+                continue
+
+            if user_input.lower() == "/clear":
+                conversation_history = []
+                save_history([])
+                if console:
+                    console.print("[green]✓[/green] Conversation history cleared.")
+                else:
+                    print("Conversation history cleared.")
+                continue
+
+            if user_input.lower() == "/config":
+                print_config(provider, model, api_key)
+                continue
+
+            if user_input.lower() == "/models":
+                list_models(provider)
+                continue
+
+            if user_input.lower() == "/tools":
+                list_tools()
+                continue
+
+            if user_input.lower() == "/identity":
+                print_identity(memory)
+                continue
+
+            if user_input.lower() == "/memories":
+                print_memories(memory)
+                continue
+
+            if user_input.lower().startswith("/remember"):
+                parts = user_input.split(maxsplit=1)
+                if len(parts) > 1:
+                    content = parts[1].strip()
+                    memory.remember(content, category=MemoryCategory.KNOWLEDGE)
+                    if console:
+                        console.print(f"[green]✓[/green] Remembered: {content}")
+                    else:
+                        print(f"✓ Remembered: {content}")
+                else:
+                    if console:
+                        console.print("[yellow]Usage: /remember <content>[/yellow]")
+                    else:
+                        print("Usage: /remember <content>")
+                continue
+
+            # Add user input to memory
+            memory.add_memory(f"User said: {user_input}", category=MemoryCategory.DIALOG)
+
+            # Build context with memory
+            memory_context = memory.to_context_string()
+
+            # Prepare input with context
+            full_input = user_input
+            if memory_context:
+                full_input = f"{memory_context}\n\nUser: {user_input}"
+
+            conversation_history.append({"role": "user", "content": user_input})
+
+            try:
+                if console:
+                    console.print(f"\n[dim]Thinking...[/dim]", end="\r")
+
+                if console:
+                    console.print("[bold blue]AI[/bold blue] [dim]>>[/dim] ", end="")
+                else:
+                    print("AI >> ", end="")
+
+                if use_stream:
+                    response = asyncio.run(agent.run(full_input))
+                    if console:
+                        console.print()
+                else:
+                    response = asyncio.run(agent.run(full_input))
+                    if console:
+                        console.print()
+                        from rich.panel import Panel
+                        from rich.box import ROUNDED
+                        panel = Panel(
+                            response,
+                            border_style="blue",
+                            box=ROUNDED,
+                            padding=(1, 2)
+                        )
+                        console.print(panel)
+                    else:
+                        print(response)
+
+                # Add AI response to memory
+                memory.add_memory(f"{identity.name or 'AI'} said: {response}", category=MemoryCategory.DIALOG)
+
+                conversation_history.append({"role": "assistant", "content": response if not use_stream else ""})
+                save_history(conversation_history)
+            except Exception as e:
+                if console:
+                    console.print(f"\n[red]Error: {e}[/red]")
+                else:
+                    print(f"Error: {e}")

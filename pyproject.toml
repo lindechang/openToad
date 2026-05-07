@@ -2,7 +2,7 @@
 name = "opentoad"
 version = "1.0.0"
 description = "Self-Sustainable AI Assistant"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "anthropic>=0.40.0",
     "openai>=1.0.0",
@@ -35,5 +35,5 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true

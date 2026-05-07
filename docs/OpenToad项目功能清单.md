@@ -417,7 +417,7 @@ CREATE TABLE llm_configs (
 
 | 组件 | 技术 |
 |------|------|
-| 语言 | Python 3.9+ |
+| 语言 | Python 3.10+ |
 | CLI | Typer + Rich |
 | 桌面 GUI | PySide6 (Qt) |
 | HTTP 客户端 | requests / aiohttp |

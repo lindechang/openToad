@@ -69,6 +69,100 @@ OpenToad 是你的"第二个大脑"，更是你的执行分身。它能记住你
 - 你希望有多个 AI Agent 协同工作，分工合作
 - 你熟悉 AI 智能体，但希望它更像"另一个你"
 
+## 🏗️ 系统架构
+
+```mermaid
+flowchart TB
+    subgraph "用户层"
+        User["用户
+(你)"]
+    end
+
+    subgraph "应用层"
+        CLI["CLI 应用
+run_opentoad.py"]
+        Desktop["桌面应用
+apps/desktop/"]
+        Web["Web 应用
+apps/web/"]
+    end
+
+    subgraph "核心层"
+        MemoryCore["记忆体核心
+src/memory/core.py"]
+        Agent["Agent 推理引擎
+src/agent/"]
+        A2A["Agent-to-Agent 协作
+src/agent_network/"]
+        Tools["工具系统
+src/tools/"]
+    end
+
+    subgraph "服务层"
+        Auth["认证服务
+src/auth/"]
+        Crypto["加密管理
+src/crypto/"]
+        Identity["身份与凭证系统
+src/identity/"]
+        Gateway["WebSocket 网关
+src/gateway/"]
+    end
+
+    subgraph "存储层"
+        SQLite[(SQLite
+记忆数据库)]
+        JSON["JSON 文件
+配置/缓存"]
+        FS["文件系统
+共享工作区"]
+    end
+
+    subgraph "外部服务"
+        LLM["LLM 提供商
+Claude/GPT/DeepSeek"]
+        Cloud["云端服务
+(可选)"]
+    end
+
+    User -->|使用| CLI
+    User -->|使用| Desktop
+    User -->|使用| Web
+
+    CLI --> MemoryCore
+    Desktop --> MemoryCore
+    Web --> MemoryCore
+
+    MemoryCore -->|推理| Agent
+    MemoryCore -->|多Agent协作| A2A
+    Agent -->|调用| Tools
+    A2A -->|协调| Agent
+
+    MemoryCore -->|身份验证| Auth
+    MemoryCore -->|加密保护| Crypto
+    A2A -->|Agent身份| Identity
+    Desktop -->|手机连接| Gateway
+
+    MemoryCore --> SQLite
+    MemoryCore --> JSON
+    A2A --> FS
+
+    Agent -->|调用| LLM
+    Auth -->|云同步| Cloud
+    Gateway -->|手机访问| User
+```
+
+### 核心模块说明
+
+| 模块 | 职责 | 文件位置 |
+|------|------|---------|
+| **记忆体系统** | 长期记忆存储、身份管理、遗忘机制 | [src/memory/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/memory) |
+| **Agent 推理引擎** | ReAct 循环、Tool 调用、任务执行 | [src/agent/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/agent) |
+| **A2A 协作系统** | 多 Agent 协调、任务分配、共享工作区 | [src/agent_network/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/agent_network) |
+| **认证服务** | 用户登录、加密密钥管理、会话控制 | [src/auth/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/auth) |
+| **加密管理** | AES-256 加密、记忆体保护 | [src/crypto/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/crypto) |
+| **身份与凭证** | Agent 信誉评分、证书系统 | [src/identity/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/identity) |
+
 ## ✨ 特性
 
 ### 核心能力
