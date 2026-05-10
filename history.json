@@ -9,7 +9,7 @@
   },
   {
     "role": "user",
-    "content": "好的"
+    "content": "你是哪个llm"
   },
   {
     "role": "assistant",

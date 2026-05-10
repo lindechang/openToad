@@ -5,7 +5,9 @@ auth
 cli
 client
 crypto
+economy
 gateway
+identity
 memory
 profile
 providers

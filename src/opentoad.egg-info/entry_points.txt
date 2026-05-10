@@ -1,2 +1,2 @@
 [console_scripts]
-opentoad = cli.main:main
+opentoad = src.cli.main:main

@@ -12,17 +12,17 @@
 </p>
 
 <p align="center">
-  <a href="#">
-    <img src="https://img.shields.io/github/stars/opentoad/opentoad?style=flat" alt="stars" />
+  <a href="https://github.com/lindechang/openToad">
+    <img src="https://img.shields.io/github/stars/lindechang/openToad?style=flat" alt="stars" />
   </a>
-  <a href="#">
-    <img src="https://img.shields.io/github/forks/opentoad/opentoad?style=flat" alt="forks" />
+  <a href="https://github.com/lindechang/openToad">
+    <img src="https://img.shields.io/github/forks/lindechang/openToad?style=flat" alt="forks" />
   </a>
-  <a href="#">
-    <img src="https://img.shields.io/github/license/opentoad/opentoad?style=flat" alt="license" />
+  <a href="https://github.com/lindechang/openToad/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/lindechang/openToad?style=flat" alt="license" />
   </a>
-  <a href="#">
-    <img src="https://img.shields.io/github/v/release/opentoad/opentoad?style=flat" alt="version" />
+  <a href="https://github.com/lindechang/openToad/releases">
+    <img src="https://img.shields.io/github/v/release/lindechang/openToad?style=flat" alt="version" />
   </a>
 </p>
 
@@ -32,30 +32,54 @@
 
 **OpenToad – 你的 AI 记忆分身**
 
-它不是笔记，不是提醒，而是可以**独立行动**的智能体。
-
-OpenToad 是你的"第二个大脑"，更是你的执行分身。它能记住你的目标、习惯与意图，并在你授权下独立推进任务、执行计划、主动提醒与行动。
+它不是传统意义上的 AI 助手——不是等你发号施令的聊天机器人，也不是一次性的任务执行器。OpenToad 被设计为**能够独立行动的智能体**：它拥有长期记忆，能记住你的目标、习惯与上下文；它具备多智能体协作能力，能将复杂任务自动拆解、分派、汇总；它在你的授权下主动推进任务，并在长期陪伴中与你协同进化。
 
 ### 核心理念
 
 > **最真实的人格 = 常年累月积累的记忆体**
 
-### 它不只是记忆，更是执行
+每一次对话、每一个决策、每一段上下文，都会被吸收进它的记忆体系，让它越来越懂你，越来越像"另一个你"。
 
-- 设定一个目标，OpenToad 会拆解步骤、主动推进
-- 记录你的偏好与上下文，在执行任务时自动调用
-- 支持多 Agent 协同工作，任务自动分配与汇总
-- 持续学习和进化，使用越久越懂你
+它既是一个**能记住你的智能体**，也是一个**能替你行动的智能体**。
+
+## 🔍 背景
+
+### 现有 AI 助手的三个局限
+
+当前主流 AI 产品（ChatGPT、Claude、DeepSeek 等）虽然能力强大，但在**个人化陪伴与持续执行**方面存在三个结构性问题：
+
+1. **无状态对话**：每次对话都是一次"重启"，AI 记不住你昨天说过什么、上周定过什么目标，更无法形成长期、连贯的协作关系。
+2. **被动响应**：AI 只在收到指令时工作，无法主动推进任务、提醒关键节点或在适当时机提出建议。
+3. **单体架构**：一个 AI 模型试图解决所有问题，复杂任务（如"策划一次旅行 + 预订机票 + 整理预算"）缺乏内部的分工协作机制。
+
+### OpenToad 的出发点
+
+OpenToad 从设计之初就试图回答三个问题：
+
+- **如果 AI 能记住你呢？** —— 于是有了**长期记忆中枢**
+- **如果 AI 能主动行动呢？** —— 于是有了**独立执行引擎**
+- **如果多个 AI 能协同工作呢？** —— 于是有了**Agent-to-Agent（A2A）协作系统**
+
+### 技术定位
+
+OpenToad 不试图替代现有 LLM 的能力，而是在它们之上构建一个**个人化的智能体操作系统**：
+
+- **记忆体** 作为长期状态载体
+- **多智能体架构** 作为任务执行的协作范式
+- **Gateway + A2A 协议** 作为开放互联的基础设施
+- **身份与凭证系统** 作为信任与安全边界
+
+最终目标是让每个人都能拥有一个**属于自己的、可成长的、能行动的 AI 分身**。
 
 ### 主要功能
 
 | 功能 | 说明 |
 | --- | --- |
+| **智能记忆系统** | 记住你的身份、偏好、目标和习惯，每次对话自动加载相关记忆 |
+| **多模型 Agent** | ReAct 推理循环，10+ LLM 提供商支持，动态工具选择 |
+| **Agent Network 协作** | 多 Agent 协同工作，任务自动分配与汇总 |
 | **独立执行任务** | 无需你持续干预，OpenToad 可按计划完成多步操作 |
-| **长期记忆中枢** | 记住你的习惯、偏好、待办事项与项目上下文 |
 | **主动式智能体** | 在合适的时间主动提出建议、执行动作或提醒 |
-| **任务与计划管理** | 支持自然语言创建任务，由 AI 自动拆解与执行 |
-| **Agent-to-Agent 协作** | 多 Agent 协同工作，支持任务拆分与结果汇总 ⭐ |
 | **与你协同进化** | 使用越久，越懂你的节奏与优先级 |
 
 ### 隐私优先
@@ -163,110 +187,84 @@ Claude/GPT/DeepSeek"]
 | **加密管理** | AES-256 加密、记忆体保护 | [src/crypto/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/crypto) |
 | **身份与凭证** | Agent 信誉评分、证书系统 | [src/identity/](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/src/identity) |
 
-## ✨ 特性
+## ✨ 核心功能
 
-### 核心能力
+### 🎯 智能记忆系统
 
-- **记忆体系统** - 长期记忆存储
-  - 身份记忆：记住自己是谁、服务于谁
-  - 偏好记忆：学习主人的代码风格、沟通习惯
-  - 知识记忆：积累主人告诉的事实和知识
-  - 项目记忆：跟踪项目进度和上下文
-  - **本地存储**：记忆数据存储在本地 SQLite 数据库
-  - **记忆体加密**：支持 AES-256 加密，密钥由用户密码派生
-  - **账号绑定**：记忆体可绑定到用户账号，实现数据保护
-- **渐进式自我认知** - 身份由被赋予到自我探索逐渐形成
-- **智能遗忘机制** - 主人标记 + AI评估 + 使用频率，三重升级策略
+- **长期记忆**：记住你的身份、偏好、目标和习惯
+- **自动分类**：智能将记忆分类（身份/偏好/知识/项目）
+- **上下文注入**：每次对话自动加载相关记忆
+- **加密保护**：敏感信息 AES-256-GCM 加密存储
+- **多用户隔离**：支持独立的记忆空间
 
-### 对话与推理
+### 🤖 多模型 Agent
 
-- **CLI 对话** - 终端直接交互，支持流式响应
-- **桌面应用** - 跨平台 GUI 界面，支持 Windows、macOS、Linux
-- **Web 应用** - 浏览器访问，支持 Chrome、Safari、Firefox 等主流浏览器
-- **ReAct 推理循环** - 思维链可视化，Tool 调用编排
-- **Tool 系统** - Shell 执行、文件操作、网页搜索、计算器
-- **流式支持** - 实时响应，提升用户体验
+- **ReAct 推理**：思考 → 行动 → 观察的循环
+- **10+ LLM 支持**：Claude / GPT-4 / DeepSeek / Qwen 等
+- **动态工具选择**：根据任务自动选择最合适的工具
+- **流式输出**：实时显示思考过程
 
-### 多模型支持
+### 🌐 Agent Network 协作
 
-| 类型  | 模型                                      |
-| --- | --------------------------------------- |
-| 海外  | Claude, GPT, Gemini                     |
-| 国内  | 文心一言, 通义千问, 混元, ChatGLM, Kimi, DeepSeek |
-| 自部署 | Ollama, LocalAI, LM Studio, vLLM        |
+- **多 Agent 角色**：Coordinator / Worker / Researcher / Writer / Reviewer
+- **智能任务分配**：自动拆分复杂任务并分配给合适的 Agent
+- **共享工作区**：多 Agent 协作的笔记、文件、追踪
+- **自我进化**：性能监控、自动优化、持续学习
+- **身份凭证系统**：Agent 身份验证与信誉评分
 
-### 可扩展盈利
+### 🔐 安全与身份
 
-- 实例通讯：客户端自动注册、云端任务分发
-- Token 经济：实例在线、任务执行赚取 Token
-- 广告联盟、订阅系统、API 变现
+- **身份凭证系统**：Agent 身份验证与信誉评分
+- **Gateway 连接**：手机与电脑的安全连接
+- **加密存储**：本地加密保护用户数据
+- **多用户隔离**：独立记忆空间
 
-### Agent-to-Agent 协作系统 ⭐
+## 📊 开发里程碑
 
-- **多 Agent 协同** - 支持 Coordinator（协调者）、Worker（工作者）、Researcher（研究员）、Writer（作者）等角色
-- **任务拆分与汇总** - 一个主任务可拆分为多个子任务，分派给不同 Agent，最后自动汇总结果
-- **Agent 发现** - 本地 Agent 注册中心 + 网络 Agent 发现，支持按角色查询和分配
-- **A2A 通讯协议** - 定义了 Agent 间的标准消息格式
-- **桌面 UI 面板** - Agent Network 面板，可查看 Agent 列表和任务状态
-- **共享工作区** - 多 Agent 协作的笔记、文件共享和活动追踪
-- **身份与凭证系统** - Agent 身份管理、信誉评分、凭证认证
-- **自我进化系统** - 智能性能监控、自动优化提案、持续学习
-- **预留扩展点** -
-  - `src/economy/`：为未来的经济交互系统预留
+| 日期 | 里程碑 | 状态 |
+|------|--------|------|
+| 2026-03-20 | 记忆系统设计完成 | ✅ |
+| 2026-03-20 | 记忆系统实现完成 | ✅ |
+| 2026-04-15 | Agent 推理引擎完成 | ✅ |
+| 2026-04-20 | CLI 应用整合完成 | ✅ |
+| 2026-05-01 | A2A 协作系统设计完成 | ✅ |
+| 2026-05-01 | A2A 协作系统实现完成 | ✅ |
+| 2026-05-07 | 记忆系统与 Agent 整合完成 | ✅ |
+| 2026-05-07 | 文档体系建设完成 | ✅ |
 
-### 手机直连 (Gateway)
+## 🛠️ 技术栈
 
-- **WebSocket Gateway** - 手机 App 可直接与 OpenToad 终端通讯
-- 无需经过远程 API 服务器
-- InstanceID 认证，简单安全
-- 支持流式响应
+- **语言**: Python 3.10+
+- **核心框架**: Typer + Rich (CLI)
+- **Web 框架**: FastAPI + Uvicorn
+- **存储**: SQLite + JSON
+- **加密**: AES-256-GCM
+- **LLM 支持**: Claude, GPT-4, DeepSeek, Qwen 等 10+ 提供商
 
-## 🔗 手机连接
+## 🎨 多端支持
 
-OpenToad 支持手机 App 直接连接，实现真正的一对一私人 AI 助手。
+### CLI 应用 (`run_opentoad.py`)
 
-### 连接方式
+- 完整的 ReAct Agent
+- 记忆系统集成
+- 10+ LLM 提供商支持
+- Rich UI 美化界面
+- Web 模式支持
 
-```
-ws://<电脑IP>:18989/ws
-```
+### 桌面应用 (`apps/desktop/`)
 
-### 认证消息
+- PyQt5 跨平台界面
+- Agent Network 可视化面板
+- Gateway 手机连接功能
+- 多会话管理
+- 记忆系统管理
 
-```json
-{"type": "auth", "payload": {"instance_id": "你的instance_id"}}
-```
+### Web 应用 (`apps/web/`)
 
-### 发送消息
-
-```json
-{"type": "message", "payload": {"content": "你好", "stream": true}}
-```
-
-### 启用 Gateway
-
-桌面应用：设置 → 📱 手机连接 → 勾选「启用 Gateway 服务」
-
-或使用独立启动脚本：
-
-```bash
-python scripts/start_gateway.py --api-key your-key --model gpt-4o-mini
-```
-
-## 🧠 记忆体
-
-OpenToad 使用单一记忆体存储所有对话上下文和数据。
-
-### 记忆体存储
-
-- **本地记忆体**：未登录用户使用，数据存储在 `~/.opentoad/memory.db`
-- **加密记忆体**：登录用户使用，AES-256 加密保护
-
-### 数据安全
-
-- API Key 存储在全局设置中，使用 AES-256 加密
-- 加密密钥从用户密码 PBKDF2 派生
-- 敏感信息不在 `settings.json` 中存储
+- FastAPI 后端
+- WebSocket 实时通讯
+- Agent Network 界面
+- RESTful API 接口
 
 ## 🚀 快速开始
 
@@ -279,8 +277,8 @@ OpenToad 使用单一记忆体存储所有对话上下文和数据。
 
 ```bash
 # 克隆仓库
-git clone https://github.com/opentoad/opentoad.git
-cd opentoad
+git clone https://github.com/lindechang/openToad.git
+cd openToad
 
 # 安装核心依赖
 pip install -e .
@@ -315,16 +313,12 @@ cp .env.example .env
 # 方式 2: 直接运行完整功能 CLI
 python3 run_opentoad.py
 
-# 方式 3: 简单记忆体 CLI
-python -m src.cli.main
+# 方式 3: 启动 Web 模式
+python3 run_opentoad.py --web --port 8000
+# 然后访问 http://localhost:8000
 
 # 方式 4: 启动桌面应用
 python3 apps/desktop/src/main.py
-
-# 方式 5: 启动 Web 应用
-cd apps/web/backend
-python main.py
-# 然后访问 http://localhost:8000
 ```
 
 #### Windows
@@ -336,36 +330,49 @@ opentoad.bat
 # 方式 2: 直接运行完整功能 CLI
 python run_opentoad.py
 
-# 方式 3: 简单记忆体 CLI
-python -m src.cli.main
+# 方式 3: 启动 Web 模式
+python run_opentoad.py --web --port 8000
+# 然后访问 http://localhost:8000
 
 # 方式 4: 启动桌面应用
 python apps/desktop/src/main.py
-
-# 方式 5: 启动 Web 应用
-cd apps/web/backend
-python main.py
-:: 然后访问 http://localhost:8000
 ```
 
-### 配置保存功能
+### CLI 交互命令
 
-OpenToad 支持配置保存功能，首次运行时会提示您选择提供商、模型并输入 API key。
+OpenToad 提供了丰富的交互命令：
 
-
+- `/help` - 显示帮助信息
+- `/identity` - 查看 AI 身份信息
+- `/memories` - 查看记忆列表
+- `/remember [内容]` - 手动添加重要记忆
+- `/config` - 查看或修改配置
+- `/clear` - 清空当前对话历史
 
 ## 📖 文档
 
-- [官网](https://opentoad.cn)
-- [安装指南](docs/getting-started/installation.md)
-- [配置说明](docs/configuration/README.md)
-- [模型接入](docs/providers/README.md)
-- [Tool 开发](docs/tools/README.md)
-- [记忆体系统设计](docs/plans/2026-03-20-memory-system-design.md)
-- [Agent-to-Agent 协作系统设计](docs/plans/2026-05-01-agent-to-agent-design.md) ⭐
-- [Agent-to-Agent 实现计划](docs/plans/2026-05-01-agent-to-agent-implementation.md) ⭐
-- [桌面应用](docs/desktop/README.md)
-- [功能清单](docs/OpenToad项目功能清单.md)
+### 官方资源
+
+- **官网**: [http://opentoad.cn/](http://opentoad.cn/)
+- **GitHub**: [https://github.com/lindechang/openToad](https://github.com/lindechang/openToad)
+- **开发概述**: [docs/OPENTOAD_DEVELOPMENT_OVERVIEW.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/OPENTOAD_DEVELOPMENT_OVERVIEW.md)
+
+### 用户指南
+
+- **CLI 使用指南**: [docs/user-guide/cli.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/user-guide/cli.md)
+- **Web 使用指南**: [docs/user-guide/web.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/user-guide/web.md)
+- **桌面使用指南**: [docs/user-guide/desktop.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/user-guide/desktop.md)
+
+### 设计文档
+
+- **记忆体系统设计**: [docs/plans/2026-03-20-memory-system-design.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/plans/2026-03-20-memory-system-design.md)
+- **记忆体系统实现**: [docs/plans/2026-03-20-memory-system-implementation.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/plans/2026-03-20-memory-system-implementation.md)
+- **Agent-to-Agent 协作系统设计**: [docs/plans/2026-05-01-agent-to-agent-design.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/plans/2026-05-01-agent-to-agent-design.md)
+- **Agent-to-Agent 实现计划**: [docs/plans/2026-05-01-agent-to-agent-implementation.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/plans/2026-05-01-agent-to-agent-implementation.md)
+
+### 其他
+
+- **功能清单**: [docs/OpenToad项目功能清单.md](file:///Users/lindechang/Desktop/BOOK/workSpace/aiPrj/OpenToad/docs/OpenToad项目功能清单.md)
 
 ## 🏗️ 项目结构
 
@@ -396,40 +403,42 @@ opentoad/
 │   │   ├── openai.py     # GPT
 │   │   ├── deepseek.py   # DeepSeek
 │   │   └── ollama.py     # 自部署
-│   ├── client/        # 实例通讯客户端 (HTTP)
 │   ├── gateway/       # WebSocket Gateway 服务 ⭐
-│   │   ├── server.py     # Gateway 服务端
-│   │   ├── ai_handler.py # AI 消息处理
-│   │   ├── protocol.py   # 消息协议（已扩展支持 A2A）
-│   │   └── config.py     # 配置
 │   ├── auth/          # 认证服务
-│   └── economy/       # 经济交互系统（预留）⭐
+│   └── crypto/        # 加密管理
 │
 ├── apps/              # 应用程序
 │   ├── desktop/       # 桌面应用 (PySide6)
-│   │   └── src/ui/
-│   │       ├── agent_network_panel.py # Agent Network 面板
-│   │       └── session_sidebar.py    # 侧边栏（已集成 Agent Network）
-│   │
 │   └── web/           # Web 应用 (FastAPI + HTML)
-│       ├── backend/
-│       │   ├── main.py        # FastAPI 后端（复用核心模块）⭐
-│       │   └── requirements.txt
-│       └── frontend/
-│           └── index.html     # Web UI
 │
 ├── scripts/           # 脚本
-│   ├── start_gateway.py      # Gateway 启动脚本
-│   └── test_gateway_client.py # 测试客户端
+│   └── start_gateway.py # Gateway 启动脚本
 │
 ├── tests/             # 测试
 │   └── agent_network/ # A2A 系统测试
 │
 └── docs/              # 文档
-    └── plans/         # 设计文档
-        ├── 2026-05-01-agent-to-agent-design.md       # A2A 设计文档
-        └── 2026-05-01-agent-to-agent-implementation.md # A2A 实现计划
+    ├── user-guide/     # 用户指南
+    ├── plans/         # 设计文档
+    └── OPENTOAD_DEVELOPMENT_OVERVIEW.md # 开发概述
 ```
+
+## 🔮 未来展望
+
+### 短期目标
+
+- [ ] 记忆系统强化：更智能的记忆提取与关联
+- [ ] Agent 能力扩展：更多专用 Agent 角色
+- [ ] Gateway 完善：移动端 App 开发
+- [ ] 插件系统：开放第三方工具集成
+
+### 长期愿景
+
+- [ ] 跨设备同步：手机/电脑/平板无缝切换
+- [ ] 多语言支持：中文/英文/日文等多语言界面
+- [ ] 云端部署：Serverless 架构支持
+- [ ] 社区生态：用户分享 Agent 配置和工作流
+- [ ] 开放平台：开发者构建自己的 Agent 应用
 
 ## 🛠️ 开发
 
@@ -446,7 +455,7 @@ python -m black src/
 
 ## 🤝 贡献
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何参与。
+欢迎贡献！请提交 Issue 或 Pull Request。
 
 ## 📄 许可证
 
@@ -455,5 +464,6 @@ MIT 许可证 - 查看 [LICENSE](LICENSE) 文件。
 ***
 
 <p align="center">
+  <strong>OpenToad – 你的 AI 分身，从今天开始成长</strong><br />
   用 ❤️ 制作 · OpenToad Team
 </p>

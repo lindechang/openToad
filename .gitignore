@@ -33,3 +33,6 @@ profile.json
 *.egg-info/
 dist/
 build/
+
+# Documentation (暂不上传)
+docs/
