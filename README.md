@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://opentoad.cn" target="_blank">
+  <a href="http://opentoad.cn" target="_blank">
     <img src="https://img.shields.io/website?url=https%3A%2F%2Fopentoad.cn&label=官网" alt="官网" />
   </a>
 </p>
